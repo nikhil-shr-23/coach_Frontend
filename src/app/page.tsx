@@ -54,7 +54,7 @@ export default function AdminLoginPage() {
             </span>
           </div>
           <h1 className="font-display text-4xl lg:text-6xl font-bold text-white leading-tight mt-8">
-            PdLogical
+            Pedagogical
           </h1>
           <p className="font-ui text-lg lg:text-xl text-white/70 mt-4 max-w-md leading-relaxed">
             A Fitbit for Teaching — Private, automated, evidence-based feedback
