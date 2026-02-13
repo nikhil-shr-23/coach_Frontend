@@ -21,6 +21,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { UserNav } from "@/components/dashboard/user-nav";
+import { Notifications } from "@/components/dashboard/notifications";
 
 interface Department {
   name: string;
@@ -197,22 +199,14 @@ export default function DeanDashboardPage() {
             >
               Dean · {SCHOOL.shortName}
             </Badge>
+            <Notifications />
             <Separator orientation="vertical" className="h-6" />
-            <div className="flex items-center gap-3">
-              <Avatar className="w-8 h-8 border border-dashed border-border">
-                <AvatarFallback className="font-ui text-xs font-semibold bg-primary/10 text-primary">
-                  RK
-                </AvatarFallback>
-              </Avatar>
-              <div className="hidden sm:block">
-                <p className="text-sm font-sans font-medium text-foreground leading-none">
-                  {SCHOOL.dean}
-                </p>
-                <p className="text-xs font-ui text-muted-foreground mt-0.5">
-                  dean.soet@krmangalam.edu.in
-                </p>
-              </div>
-            </div>
+            <UserNav
+              name={SCHOOL.dean}
+              email="dean.soet@krmangalam.edu.in"
+              initials="RK"
+              role="Dean"
+            />
           </div>
         </div>
       </header>

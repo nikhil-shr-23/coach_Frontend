@@ -13,6 +13,18 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { UserNav } from "@/components/dashboard/user-nav";
+import { Notifications } from "@/components/dashboard/notifications";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type UserRole = "superadmin" | "admin" | "teacher";
 
@@ -226,22 +238,14 @@ export default function DashboardPage() {
                   ? "Dean"
                   : "Faculty"}
             </Badge>
+            <Notifications />
             <Separator orientation="vertical" className="h-6" />
-            <div className="flex items-center gap-3">
-              <Avatar className="w-8 h-8 border border-dashed border-border">
-                <AvatarFallback className="font-ui text-xs font-semibold bg-primary/10 text-primary">
-                  SA
-                </AvatarFallback>
-              </Avatar>
-              <div className="hidden sm:block">
-                <p className="text-sm font-sans font-medium text-foreground leading-none">
-                  Super Admin
-                </p>
-                <p className="text-xs font-ui text-muted-foreground mt-0.5">
-                  admin@krmangalam.edu.in
-                </p>
-              </div>
-            </div>
+            <UserNav
+              name="Super Admin"
+              email="admin@krmangalam.edu.in"
+              initials="SA"
+              role="Super Admin"
+            />
           </div>
         </div>
       </header>
@@ -468,12 +472,14 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <Button
-                  variant="ghost"
-                  className="w-full mt-4 font-ui text-xs uppercase tracking-wider h-9 border border-dashed border-border/40 hover:border-primary/30 hover:bg-primary/5 transition-all"
-                >
-                  View School Dashboard →
-                </Button>
+                <Link href="/dashboard/dean" className="w-full mt-4 block">
+                  <Button
+                    variant="ghost"
+                    className="w-full font-ui text-xs uppercase tracking-wider h-9 border border-dashed border-border/40 hover:border-primary/30 hover:bg-primary/5 transition-all"
+                  >
+                    View School Dashboard →
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           ))}

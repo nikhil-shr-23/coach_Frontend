@@ -21,12 +21,26 @@ export default function AdminLoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => setIsLoading(false), 1500);
+
+    // Simulate auth delay
+    setTimeout(() => {
+      setIsLoading(false);
+
+      // Educational role-based routing simulation
+      if (email.includes("admin")) {
+        window.location.href = "/dashboard";
+      } else if (email.includes("dean")) {
+        window.location.href = "/dashboard/dean";
+      } else {
+        // Default to teacher dashboard for other emails
+        window.location.href = "/dashboard/teachers";
+      }
+    }, 1500);
   };
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
-      <div className="relative flex-1 lg:flex-[3] flex flex-col justify-between p-8 lg:p-16 overflow-hidden bg-gradient-to-br from-primary via-primary/90 to-accent">
+      <div className="relative flex-1 lg:flex-3 flex flex-col justify-between p-8 lg:p-16 overflow-hidden bg-linear-to-br from-primary via-primary/90 to-accent">
         <div className="absolute top-12 right-12 w-48 h-48 border-2 border-dashed border-white/20 rounded-2xl rotate-12" />
         <div className="absolute bottom-24 left-12 w-36 h-36 border-2 border-dashed border-white/15 rounded-xl -rotate-6" />
         <div className="absolute top-1/2 right-1/3 w-24 h-24 border border-dashed border-white/10 rounded-lg rotate-45" />
@@ -89,7 +103,7 @@ export default function AdminLoginPage() {
         </div>
       </div>
 
-      <div className="flex-1 lg:flex-[2] flex items-center justify-center p-8 lg:p-16 bg-background">
+      <div className="flex-1 lg:flex-2 flex items-center justify-center p-8 lg:p-16 bg-background">
         <div className="w-full max-w-md">
           <div className="border-2 border-dashed border-border rounded-2xl p-6 lg:p-8">
             <Card className="border border-dashed border-border/60 shadow-lg">

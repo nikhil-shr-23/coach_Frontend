@@ -14,6 +14,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { UserNav } from "@/components/dashboard/user-nav";
+import { Notifications } from "@/components/dashboard/notifications";
 
 interface Lecture {
   id: string;
@@ -276,22 +278,14 @@ export default function TeacherDashboardPage() {
             >
               Faculty
             </Badge>
+            <Notifications />
             <Separator orientation="vertical" className="h-6" />
-            <div className="flex items-center gap-3">
-              <Avatar className="w-8 h-8 border border-dashed border-border">
-                <AvatarFallback className="font-ui text-xs font-semibold bg-primary/10 text-primary">
-                  AM
-                </AvatarFallback>
-              </Avatar>
-              <div className="hidden sm:block">
-                <p className="text-sm font-sans font-medium text-foreground leading-none">
-                  {TEACHER.name}
-                </p>
-                <p className="text-xs font-ui text-muted-foreground mt-0.5">
-                  {TEACHER.school} · {TEACHER.department}
-                </p>
-              </div>
-            </div>
+            <UserNav
+              name={TEACHER.name}
+              email={TEACHER.email}
+              initials="AM"
+              role="Faculty"
+            />
           </div>
         </div>
       </header>
