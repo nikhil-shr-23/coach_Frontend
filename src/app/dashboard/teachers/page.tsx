@@ -578,75 +578,109 @@ export default function TeacherDashboardPage() {
         )}
 
         {activeTab === "timetable" && (
-          <div>
-            <h3 className="font-display text-lg font-semibold text-foreground mb-6">
-              Weekly Timetable
-            </h3>
-            <div className="border-2 border-dashed border-border rounded-xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-muted/50">
-                      <th className="text-left px-4 py-3 text-xs font-ui font-semibold text-muted-foreground uppercase tracking-wider border-b border-dashed border-border w-28">
-                        Day
-                      </th>
-                      <th className="text-left px-4 py-3 text-xs font-ui font-semibold text-muted-foreground uppercase tracking-wider border-b border-dashed border-border">
-                        Time
-                      </th>
-                      <th className="text-left px-4 py-3 text-xs font-ui font-semibold text-muted-foreground uppercase tracking-wider border-b border-dashed border-border">
-                        Subject
-                      </th>
-                      <th className="text-left px-4 py-3 text-xs font-ui font-semibold text-muted-foreground uppercase tracking-wider border-b border-dashed border-border">
-                        Room
-                      </th>
-                      <th className="text-left px-4 py-3 text-xs font-ui font-semibold text-muted-foreground uppercase tracking-wider border-b border-dashed border-border">
-                        Section
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {DAYS.map((day, dayIdx) => {
-                      const slots = TIMETABLE.filter((s) => s.day === day);
-                      return slots.map((slot, slotIdx) => (
-                        <tr
-                          key={`${day}-${slotIdx}`}
-                          className="hover:bg-muted/30 transition-colors"
-                        >
-                          {slotIdx === 0 && (
-                            <td
-                              rowSpan={slots.length}
-                              className={`px-4 py-3 text-sm font-sans font-semibold text-foreground align-top border-b border-dashed border-border ${dayIdx < DAYS.length - 1 ? "" : "border-b-0"}`}
+          <div className="h-[calc(100vh-12rem)] min-h-[600px] flex flex-col border-2 border-dashed border-border rounded-xl bg-card overflow-hidden">
+            <div className="flex border-b border-dashed border-border bg-muted/30">
+              <div className="w-16 border-r border-dashed border-border shrink-0"></div>
+              <div className="flex-1 grid grid-cols-5 divide-x divide-dashed divide-border">
+                {DAYS.map((day) => (
+                  <div
+                    key={day}
+                    className="py-3 text-center border-dashed border-border"
+                  >
+                    <span className="text-xs font-ui font-semibold text-muted-foreground uppercase tracking-wider">
+                      {day}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto relative">
+              <div className="flex relative min-h-[600px]">
+                {/* Time labels */}
+                <div className="w-16 border-r border-dashed border-border bg-muted/5 shrink-0 flex flex-col font-mono text-[10px] text-muted-foreground">
+                  {Array.from({ length: 9 }).map((_, i) => {
+                    const hour = i + 9; // 9:00 to 17:00
+                    return (
+                      <div
+                        key={hour}
+                        className="h-20 border-b border-dashed border-border/50 relative"
+                      >
+                        <span className="absolute -top-2 left-2">
+                          {hour}:00
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Grid columns */}
+                <div className="flex-1 grid grid-cols-5 divide-x divide-dashed divide-border relative bg-[url('/grid-pattern.svg')]">
+                  {/* Horizontal time lines */}
+                  <div className="absolute inset-0 z-0 flex flex-col">
+                    {Array.from({ length: 9 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="h-20 border-b border-dashed border-border/30 w-full"
+                      />
+                    ))}
+                  </div>
+
+                  {DAYS.map((day) => (
+                    <div key={day} className="relative h-full z-10 group">
+                      {/* Hover effect column */}
+                      <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/5 transition-colors pointer-events-none" />
+
+                      {TIMETABLE.filter((s) => s.day === day).map(
+                        (slot, idx) => {
+                          // Simple parsing: "09:00 - 10:00" -> start hour 9, duration 1 hr
+                          const startHour = parseInt(
+                            slot.time.split("–")[0].trim().split(":")[0],
+                          );
+                          const endHour = parseInt(
+                            slot.time.split("–")[1].trim().split(":")[0],
+                          );
+                          const duration = endHour - startHour; // standard slots
+                          const topOffset = (startHour - 9) * 5; // 5rem (h-20) per hour
+                          const height = duration * 5;
+
+                          return (
+                            <div
+                              key={idx}
+                              className="absolute inset-x-1 p-2 rounded-lg border border-primary/20 bg-primary/10 hover:bg-primary/15 hover:border-primary/40 transition-all cursor-pointer shadow-sm group/event"
+                              style={{
+                                top: `${topOffset}rem`, // 20 units (80px) = 5rem
+                                height: `${height}rem`,
+                              }}
                             >
-                              {day}
-                            </td>
-                          )}
-                          <td className="px-4 py-3 text-sm font-ui text-muted-foreground border-b border-dashed border-border/50">
-                            {slot.time}
-                          </td>
-                          <td className="px-4 py-3 text-sm font-sans font-medium text-foreground border-b border-dashed border-border/50">
-                            {slot.subject}
-                          </td>
-                          <td className="px-4 py-3 border-b border-dashed border-border/50">
-                            <Badge
-                              variant="outline"
-                              className="font-ui text-[10px] border-dashed uppercase tracking-wider"
-                            >
-                              {slot.room}
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-3 border-b border-dashed border-border/50">
-                            <Badge
-                              variant="secondary"
-                              className="font-ui text-[10px] uppercase tracking-wider"
-                            >
-                              {slot.section}
-                            </Badge>
-                          </td>
-                        </tr>
-                      ));
-                    })}
-                  </tbody>
-                </table>
+                              <div className="flex flex-col h-full justify-between">
+                                <div>
+                                  <p className="font-sans text-xs font-bold text-primary truncate leading-tight">
+                                    {slot.subject}
+                                  </p>
+                                  <p className="font-ui text-[10px] text-primary/70 mt-0.5">
+                                    {slot.time}
+                                  </p>
+                                </div>
+                                <div className="flex items-center justify-between mt-1">
+                                  <Badge
+                                    variant="secondary"
+                                    className="h-4 px-1 text-[8px] border-primary/20 text-primary/80 bg-background/50 backdrop-blur-sm"
+                                  >
+                                    {slot.room}
+                                  </Badge>
+                                  <span className="font-ui text-[9px] font-semibold text-primary/60">
+                                    {slot.section}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        },
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
