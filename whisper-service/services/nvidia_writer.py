@@ -1,9 +1,11 @@
 import requests
-from config import NVIDIA_API_KEY
+from openai import OpenAI
+from config import OPENAI_API_KEY
 from middleware.failure_containment import retry_with_backoff, ExternalAPIError, nvidia_circuit_breaker
 from middleware.observability import StructuredLogger
 
 logger = StructuredLogger(__name__)
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 
 @retry_with_backoff(max_retries=3, exceptions=(requests.RequestException,))
@@ -38,23 +40,15 @@ TRANSCRIPT:
 {transcript}
 """
 
-    def _call_nvidia_api():
-        response = requests.post(
-            "https://integrate.api.nvidia.com/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {NVIDIA_API_KEY}",
-                "Accept": "application/json"
-            },
-            json={
-                "model": "meta/llama-4-maverick-17b-128e-instruct",
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.3,
-                "max_tokens": 1200
-            },
-            timeout=30.0  # Timeout protection
+    def _call_openai_api():
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            max_tokens=1200,
+            timeout=30.0
         )
-        response.raise_for_status()
-        return response.json()["choices"][0]["message"]["content"].strip()
+        return response.choices[0].message.content.strip()
     
     try:
         logger.info("Generating plain English document")
@@ -134,23 +128,15 @@ TRANSCRIPT TO ANALYZE:
 Now provide your analysis in a natural, flowing paragraph format that's easy to read and understand:
 """
 
-    def _call_nvidia_api():
-        response = requests.post(
-            "https://integrate.api.nvidia.com/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {NVIDIA_API_KEY}",
-                "Accept": "application/json"
-            },
-            json={
-                "model": "meta/llama-4-maverick-17b-128e-instruct",
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.2,
-                "max_tokens": 800
-            },
-            timeout=30.0  # Timeout protection
+    def _call_openai_api():
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.2,
+            max_tokens=800,
+            timeout=30.0
         )
-        response.raise_for_status()
-        return response.json()["choices"][0]["message"]["content"].strip()
+        return response.choices[0].message.content.strip()
     
     try:
         logger.info("Generating charter-compliant analysis")
@@ -254,23 +240,15 @@ Example without syllabus:
   "reasoning": "Traditional lecture format with content delivery but no interactive elements. No questions were posed and student participation was absent. The session would benefit from incorporating questioning techniques and wait time to encourage engagement."
 }}"""
 
-    def _call_nvidia_api():
-        response = requests.post(
-            "https://integrate.api.nvidia.com/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {NVIDIA_API_KEY}",
-                "Accept": "application/json"
-            },
-            json={
-                "model": "meta/llama-4-maverick-17b-128e-instruct",
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.2,
-                "max_tokens": 200
-            },
+    def _call_openai_api():
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.2,
+            max_tokens=200,
             timeout=30.0
         )
-        response.raise_for_status()
-        return response.json()["choices"][0]["message"]["content"].strip()
+        return response.choices[0].message.content.strip()
     
     try:
         logger.info("Generating pedagogical score")
