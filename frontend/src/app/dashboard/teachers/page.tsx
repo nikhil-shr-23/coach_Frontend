@@ -217,6 +217,61 @@ export default function TeacherDashboardPage() {
   const [activeTab, setActiveTab] = useState<
     "dashboard" | "timetable" | "upload"
   >("dashboard");
+  const [lectureTitle, setLectureTitle] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<any>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile || !lectureTitle) {
+      alert("Please provide a title and select a file.");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    const teacherProfileId = localStorage.getItem("teacherProfileId");
+
+    if (!token || !teacherProfileId) {
+      alert("Authentication error. Please login again.");
+      window.location.href = "/";
+      return;
+    }
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("audio", selectedFile);
+    formData.append("lectureTitle", lectureTitle);
+    formData.append("teacherProfileId", teacherProfileId);
+
+    try {
+      const res = await fetch("http://localhost:8080/api/lectures", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error("Upload failed");
+
+      const data = await res.json();
+      setAnalysisResult(data);
+      alert("Lecture analyzed successfully! Score: " + data.score);
+      setLectureTitle("");
+      setSelectedFile(null);
+    } catch (error) {
+      console.error(error);
+      alert("Error uploading lecture.");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const avgReview = Math.round(
     LECTURES.filter((l) => l.reviewRatio !== null).reduce(
@@ -701,11 +756,13 @@ export default function TeacherDashboardPage() {
               <CardContent className="space-y-5">
                 <div className="space-y-2">
                   <Label className="font-ui text-xs font-semibold uppercase tracking-wider text-foreground/70">
-                    Subject
+                    Subject / Title
                   </Label>
                   <Input
                     placeholder="e.g. Data Structures – Binary Trees"
                     className="border-dashed font-sans h-11"
+                    value={lectureTitle}
+                    onChange={(e) => setLectureTitle(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -718,7 +775,13 @@ export default function TeacherDashboardPage() {
                   <Label className="font-ui text-xs font-semibold uppercase tracking-wider text-foreground/70">
                     Audio File (MP3)
                   </Label>
-                  <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/30 transition-colors cursor-pointer">
+                  <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/30 transition-colors cursor-pointer relative">
+                    <input
+                      type="file"
+                      accept=".mp3,audio/*"
+                      onChange={handleFileChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
                     <svg
                       className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3"
                       fill="none"
@@ -733,15 +796,46 @@ export default function TeacherDashboardPage() {
                       />
                     </svg>
                     <p className="font-sans text-sm text-muted-foreground">
-                      Drag & drop your MP3 file here
+                      {selectedFile
+                        ? selectedFile.name
+                        : "Drag & drop your MP3 file here"}
                     </p>
                     <p className="font-ui text-xs text-muted-foreground/50 mt-1">
                       or click to browse · Max 200MB
                     </p>
                   </div>
                 </div>
-                <Button className="w-full h-11 font-ui font-semibold text-sm tracking-wide uppercase">
-                  Upload & Analyze
+                <Button
+                  className="w-full h-11 font-ui font-semibold text-sm tracking-wide uppercase"
+                  onClick={handleUpload}
+                  disabled={uploading}
+                >
+                  {uploading ? (
+                    <span className="flex items-center gap-2">
+                      <svg
+                        className="animate-spin h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        />
+                      </svg>
+                      Analyzing...
+                    </span>
+                  ) : (
+                    "Upload & Analyze"
+                  )}
                 </Button>
                 <div className="flex items-center justify-center gap-2">
                   <svg

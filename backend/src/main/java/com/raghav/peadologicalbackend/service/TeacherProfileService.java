@@ -73,6 +73,19 @@ public class TeacherProfileService {
         TeacherProfileResponse response = new TeacherProfileResponse();
         response.setId(profile.getId());
         response.setUserId(profile.getUser().getId());
+        response.setUserId(profile.getUser().getId());
         return response;
+    }
+
+    @Transactional(readOnly = true)
+    public TeacherProfileResponse getProfileForCurrentUser() {
+        String username = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        Users user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new NotFoundException("User not found: " + username));
+        
+        TeacherProfile profile = teacherProfileRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new NotFoundException("Teacher profile not found for user: " + username));
+        
+        return toResponse(profile);
     }
 }

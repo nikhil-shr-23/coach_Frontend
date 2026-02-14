@@ -29,6 +29,12 @@ public class Lecture {
     @Column(nullable = false)
     private LocalDateTime uploadedAt;
 
+    @Column(columnDefinition = "TEXT")
+    private String analysisContent;
+
+    @Column(columnDefinition = "TEXT")
+    private String scoreReasoning;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "teacher_profile_id", nullable = false)
     private TeacherProfile teacherProfile;

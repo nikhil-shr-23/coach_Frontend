@@ -14,6 +14,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/lectures")
+@CrossOrigin(origins = "http://localhost:3000")
 public class LectureController {
     private final LectureService lectureService;
 
@@ -21,6 +22,22 @@ public class LectureController {
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<LectureResponse> create(@RequestBody LectureCreateRequest request) {
         return new ResponseEntity<>(lectureService.createLecture(request), HttpStatus.CREATED);
+    }
+
+    @PostMapping(consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<LectureResponse> createWithFile(
+            @RequestParam("teacherProfileId") Long teacherProfileId,
+            @RequestParam(value = "classSlotId", required = false) Long classSlotId,
+            @RequestParam("lectureTitle") String lectureTitle,
+            @RequestParam(value = "audio", required = false) org.springframework.web.multipart.MultipartFile audio) {
+        
+        LectureCreateRequest request = new LectureCreateRequest();
+        request.setTeacherProfileId(teacherProfileId);
+        request.setClassSlotId(classSlotId);
+        request.setLectureTitle(lectureTitle);
+        
+        return new ResponseEntity<>(lectureService.createLecture(request, audio), HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")

@@ -22,20 +22,44 @@ export default function AdminLoginPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate auth delay
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const loginRes = await fetch("http://localhost:8080/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: email, password: password }),
+      });
 
-      // Educational role-based routing simulation
+      if (!loginRes.ok) throw new Error("Login failed");
+
+      const token = await loginRes.text();
+      localStorage.setItem("token", token);
+
+      if (!email.includes("admin") && !email.includes("dean")) {
+        const profileRes = await fetch(
+          "http://localhost:8080/api/teacher-profiles/me",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+
+        if (profileRes.ok) {
+          const profile = await profileRes.json();
+          localStorage.setItem("teacherProfileId", profile.id);
+        }
+      }
+
       if (email.includes("admin")) {
         window.location.href = "/dashboard";
       } else if (email.includes("dean")) {
         window.location.href = "/dashboard/dean";
       } else {
-        // Default to teacher dashboard for other emails
         window.location.href = "/dashboard/teachers";
       }
-    }, 1500);
+    } catch (error) {
+      console.error(error);
+      alert("Login failed. Is the backend running?");
+      setIsLoading(false);
+    }
   };
 
   return (

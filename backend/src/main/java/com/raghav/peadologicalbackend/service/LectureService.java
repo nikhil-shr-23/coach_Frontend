@@ -26,13 +26,22 @@ public class LectureService {
     private final LectureRepository lectureRepository;
     private final TeacherProfileRepository teacherProfileRepository;
     private final ClassRepository classRepository;
+    private final FileStorageService fileStorageService;
+    private final com.raghav.peadologicalbackend.client.WhisperClient whisperClient;
 
     @Transactional
-    public LectureResponse createLecture(LectureCreateRequest request) {
+    public LectureResponse createLecture(LectureCreateRequest request, org.springframework.web.multipart.MultipartFile audioFile) {
         if (!hasRole("TEACHER")) {
             throw new ForbiddenException("Only TEACHER can create lectures.");
         }
-        validateCreate(request);
+        
+        // 1. Validate request
+        if (request.getTeacherProfileId() == null) {
+            throw new BadRequestException("Teacher profile id is required.");
+        }
+        if (request.getLectureTitle() == null || request.getLectureTitle().trim().isEmpty()) {
+            throw new BadRequestException("Lecture title is required.");
+        }
 
         TeacherProfile teacherProfile = teacherProfileRepository.findById(request.getTeacherProfileId())
                 .orElseThrow(() -> new NotFoundException("Teacher profile not found."));
@@ -48,13 +57,41 @@ public class LectureService {
             }
         }
 
+        // 2. Store File or Use URL
+        String audioUrl = request.getLectureAudioUrl();
+        if (audioFile != null && !audioFile.isEmpty()) {
+            audioUrl = fileStorageService.storeFile(audioFile);
+        } else if (audioUrl == null || audioUrl.trim().isEmpty()) {
+            throw new BadRequestException("Audio file or URL is required.");
+        }
+
+        // 3. Call Whisper Service
+        com.raghav.peadologicalbackend.dto.WhisperResponse whisperResponse = null;
+        if (audioFile != null && !audioFile.isEmpty()) {
+             // We need a File object for the client. The service returns a path string.
+             java.io.File file = new java.io.File(audioUrl);
+             whisperResponse = whisperClient.analyzeAudio(file);
+        }
+        
+        // 4. Create and Save Lecture
         Lecture lecture = new Lecture();
         lecture.setLectureTitle(request.getLectureTitle().trim());
-        lecture.setLectureAudioUrl(request.getLectureAudioUrl().trim());
+        lecture.setLectureAudioUrl(audioUrl);
         lecture.setTeacherProfile(teacherProfile);
         lecture.setClassSlot(classSlot);
+        
+        if (whisperResponse != null && whisperResponse.getData() != null) {
+            lecture.setScore(whisperResponse.getData().getPedagogicalScore());
+            lecture.setAnalysisContent(whisperResponse.getData().getAnalysis());
+            lecture.setScoreReasoning(whisperResponse.getData().getScoreReasoning());
+        }
 
         return toResponse(lectureRepository.save(lecture));
+    }
+
+    @Transactional
+    public LectureResponse createLecture(LectureCreateRequest request) {
+        return createLecture(request, null);
     }
 
     @Transactional(readOnly = true)
@@ -173,6 +210,8 @@ public class LectureService {
         response.setUploadedAt(lecture.getUploadedAt());
         response.setTeacherProfileId(lecture.getTeacherProfile().getId());
         response.setClassSlotId(lecture.getClassSlot() != null ? lecture.getClassSlot().getId() : null);
+        response.setAnalysisContent(lecture.getAnalysisContent());
+        response.setScoreReasoning(lecture.getScoreReasoning());
         return response;
     }
 }

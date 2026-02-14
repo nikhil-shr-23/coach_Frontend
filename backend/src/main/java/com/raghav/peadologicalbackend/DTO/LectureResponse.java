@@ -13,4 +13,6 @@ public class LectureResponse {
     private LocalDateTime uploadedAt;
     private Long teacherProfileId;
     private Long classSlotId;
+    private String analysisContent;
+    private String scoreReasoning;
 }

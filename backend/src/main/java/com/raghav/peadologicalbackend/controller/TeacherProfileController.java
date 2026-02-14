@@ -13,6 +13,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/teacher-profiles")
+@CrossOrigin(origins = "http://localhost:3000")
 public class TeacherProfileController {
     private final TeacherProfileService teacherProfileService;
 
@@ -29,6 +30,11 @@ public class TeacherProfileController {
     @GetMapping
     public ResponseEntity<List<TeacherProfileResponse>> list() {
         return ResponseEntity.ok(teacherProfileService.list());
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<TeacherProfileResponse> getMe() {
+        return ResponseEntity.ok(teacherProfileService.getProfileForCurrentUser());
     }
 
     @DeleteMapping("/{id}")
