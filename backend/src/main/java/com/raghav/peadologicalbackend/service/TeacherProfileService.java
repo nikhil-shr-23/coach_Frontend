@@ -73,7 +73,10 @@ public class TeacherProfileService {
         TeacherProfileResponse response = new TeacherProfileResponse();
         response.setId(profile.getId());
         response.setUserId(profile.getUser().getId());
-        response.setUserId(profile.getUser().getId());
+        response.setSchool(profile.getSchool());
+        response.setDepartment(profile.getDepartment());
+        response.setName(profile.getUser().getName());
+        response.setEmail(profile.getUser().getEmail());
         return response;
     }
 

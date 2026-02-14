@@ -25,6 +25,7 @@ public class DashboardController {
 
     private final TeacherProfileRepository teacherRepo;
     private final LectureRepository lectureRepo;
+    private final com.raghav.peadologicalbackend.repository.UserRepository userRepo;
 
     @GetMapping("/stats")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
@@ -65,9 +66,67 @@ public class DashboardController {
         return ResponseEntity.ok(stats);
     }
 
+    @GetMapping("/teacher/me")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<FacultyStatsDTO> getMyStats() {
+        String username = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        com.raghav.peadologicalbackend.entity.Users user = userRepo.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        TeacherProfile teacher = teacherRepo.findByUserId(user.getId())
+                .orElseThrow(() -> new RuntimeException("Teacher profile not found"));
+
+        // Get aggregated stats for this teacher
+        // findTeacherStatsBySchool returns list of [id, count, avgScore, maxUploadedAt]
+        // But we need stats for a single teacher. We can reuse the repo method or better yet, fetch lectures directly.
+        // Let's use lectureRepo.findByTeacherProfileId(id) to calculate.
+        
+        List<com.raghav.peadologicalbackend.entity.Lecture> lectures = lectureRepo.findByTeacherProfileId(teacher.getId());
+        
+        Long lectureCount = (long) lectures.size();
+        Double avgScore = lectures.stream()
+                .mapToDouble(l -> l.getScore() != null ? l.getScore() : 0.0)
+                .average()
+                .orElse(0.0);
+        
+        // Find last active (uploaded_at)
+        LocalDateTime lastActive = lectures.stream()
+                .map(com.raghav.peadologicalbackend.entity.Lecture::getUploadedAt)
+                .max(LocalDateTime::compareTo)
+                .orElse(null);
+
+        FacultyStatsDTO dto = new FacultyStatsDTO(
+                teacher.getId(),
+                teacher.getUser().getName(),
+                teacher.getDepartment(),
+                lectureCount,
+                avgScore,
+                lastActive
+        );
+
+        return ResponseEntity.ok(dto);
+    }
+
     @GetMapping("/school/{schoolName}")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')") // Admin here means Dean
     public ResponseEntity<List<FacultyStatsDTO>> getSchoolFaculty(@PathVariable String schoolName) {
+        // Security Check: If user is ADMIN (Dean), ensure they belong to this school
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        boolean isSuperAdmin = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN"));
+
+        if (!isSuperAdmin) {
+            String username = auth.getName();
+            com.raghav.peadologicalbackend.entity.Users user = userRepo.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            
+            TeacherProfile profile = teacherRepo.findByUserId(user.getId())
+                    .orElseThrow(() -> new RuntimeException("Dean profile not found"));
+            
+            if (!profile.getSchool().equalsIgnoreCase(schoolName)) {
+                return ResponseEntity.status(403).build();
+            }
+        }
         // 1. Get all teachers for the school
         List<TeacherProfile> teachers = teacherRepo.findBySchool(schoolName);
 

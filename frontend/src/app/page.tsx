@@ -34,7 +34,10 @@ export default function AdminLoginPage() {
       const token = await loginRes.text();
       localStorage.setItem("token", token);
 
-      if (!email.includes("admin") && !email.includes("dean")) {
+      if (email.includes("admin")) {
+        window.location.href = "/dashboard";
+      } else {
+        // Fetch profile to get school info for Dean or just to confirm Teacher
         const profileRes = await fetch(
           "http://localhost:8080/api/teacher-profiles/me",
           {
@@ -45,15 +48,22 @@ export default function AdminLoginPage() {
         if (profileRes.ok) {
           const profile = await profileRes.json();
           localStorage.setItem("teacherProfileId", profile.id);
-        }
-      }
 
-      if (email.includes("admin")) {
-        window.location.href = "/dashboard";
-      } else if (email.includes("dean")) {
-        window.location.href = "/dashboard/dean";
-      } else {
-        window.location.href = "/dashboard/teachers";
+          if (email.includes("dean")) {
+            // Redirect to Dean dashboard with school param
+            const schoolParam = encodeURIComponent(
+              profile.school || "School of Engineering & Technology",
+            );
+            window.location.href = `/dashboard/dean?school=${schoolParam}`;
+          } else {
+            // Teacher
+            window.location.href = "/dashboard/teacher";
+          }
+        } else {
+          // Fallback if profile fetch fails but login worked (shouldn't happen for valid users)
+          console.error("Failed to fetch profile");
+          alert("Login successful but failed to load profile.");
+        }
       }
     } catch (error) {
       console.error(error);
