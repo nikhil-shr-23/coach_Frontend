@@ -2,14 +2,29 @@
 > pdlogical_frontend@0.1.0 dev
 > next dev
 
+⚠ Found lockfile missing swc dependencies, patching...
 ▲ Next.js 16.1.6 (Turbopack)
 - Local:         http://localhost:3000
 - Network:       http://10.26.111.223:3000
 
 ✓ Starting...
-✓ Ready in 1142ms
- GET / 200 in 2.7s (compile: 2.2s, render: 478ms)
- GET / 200 in 647ms (compile: 69ms, render: 577ms)
- GET / 200 in 133ms (compile: 12ms, render: 121ms)
- GET / 200 in 209ms (compile: 21ms, render: 188ms)
- GET / 200 in 789ms (compile: 87ms, render: 702ms)
+✓ Ready in 1436ms
+⚠ Lockfile was successfully patched, please run "npm install" to ensure @next/swc dependencies are downloaded
+ GET / 200 in 2.5s (compile: 2.3s, render: 150ms)
+ HEAD / 200 in 157ms (compile: 36ms, render: 121ms)
+ GET /dashboard/teachers 404 in 570ms (compile: 238ms, render: 332ms)
+○ Compiling /dashboard ...
+ GET /dashboard/teachers 404 in 345ms (compile: 84ms, render: 261ms)
+ GET /dashboard/teacher 200 in 791ms (compile: 659ms, render: 131ms)
+ GET /dashboard/teacher_ananya/teacher123 404 in 130ms (compile: 34ms, render: 96ms)
+ GET / 200 in 65ms (compile: 8ms, render: 57ms)
+ GET / 200 in 282ms (compile: 67ms, render: 215ms)
+ GET /? 200 in 170ms (compile: 17ms, render: 153ms)
+ GET /? 200 in 147ms (compile: 22ms, render: 125ms)
+ GET / 200 in 1159ms (compile: 91ms, render: 1068ms)
+ GET / 200 in 201ms (compile: 9ms, render: 192ms)
+ GET / 200 in 416ms (compile: 44ms, render: 372ms)
+ GET / 200 in 760ms (compile: 33ms, render: 727ms)
+ GET / 200 in 108ms (compile: 60ms, render: 48ms)
+ GET /dashboard/teacher 200 in 137ms (compile: 28ms, render: 109ms)
+ GET / 200 in 67ms (compile: 13ms, render: 54ms)

@@ -8,6 +8,9 @@ import java.util.List;
 
 public interface LectureRepository extends JpaRepository<Lecture, Long> {
     List<Lecture> findByTeacherProfileId(Long teacherProfileId);
+    
+    // For "Recent Lectures"
+    List<Lecture> findTop5ByTeacherProfileIdOrderByUploadedAtDesc(Long teacherProfileId);
     List<Lecture> findByClassSlotId(Long classSlotId);
     List<Lecture> findByTeacherProfileIdAndClassSlotId(Long teacherProfileId, Long classSlotId);
 

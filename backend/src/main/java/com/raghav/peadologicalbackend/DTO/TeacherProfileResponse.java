@@ -10,6 +10,7 @@ public class TeacherProfileResponse {
     private String department;
     private String name;
     private String email;
+    private Long timetableId;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -23,4 +24,6 @@ public class TeacherProfileResponse {
     public void setName(String name) { this.name = name; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+    public Long getTimetableId() { return timetableId; }
+    public void setTimetableId(Long timetableId) { this.timetableId = timetableId; }
 }

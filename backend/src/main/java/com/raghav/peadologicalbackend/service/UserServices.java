@@ -42,11 +42,15 @@ public class UserServices {
                         dto.getUsername(),
                         dto.getPassword()
                 ));
-        Users user  = userRepo.findByUsername(dto.getUsername());
+        // Support login by username OR email
+        Users user = userRepo.findByUsername(dto.getUsername());
+        if (user == null) {
+            user = userRepo.findByEmail(dto.getUsername());
+        }
+        if (user == null) {
+            throw new RuntimeException("User not found after authentication");
+        }
         return jwtService.genrateToken(user.getUsername(), String.valueOf(user.getRoles()));
-
-
-
     }
 }
 

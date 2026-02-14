@@ -214,4 +214,22 @@ public class LectureService {
         response.setScoreReasoning(lecture.getScoreReasoning());
         return response;
     }
+
+    @Transactional(readOnly = true)
+    public List<LectureResponse> getRecentLectures(Long teacherProfileId) {
+        return lectureRepository.findTop5ByTeacherProfileIdOrderByUploadedAtDesc(teacherProfileId)
+                .stream()
+                .map(lecture -> new LectureResponse(
+                        lecture.getId(),
+                        lecture.getLectureTitle(),
+                        lecture.getLectureAudioUrl(),
+                        lecture.getScore(),
+                        lecture.getUploadedAt(),
+                        lecture.getTeacherProfile().getId(),
+                        lecture.getClassSlot() != null ? lecture.getClassSlot().getId() : null,
+                        lecture.getAnalysisContent(),
+                        lecture.getScoreReasoning()
+                ))
+                .toList();
+    }
 }

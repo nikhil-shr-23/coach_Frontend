@@ -17,6 +17,8 @@ import java.util.List;
 @CrossOrigin(origins = "http://localhost:3000")
 public class LectureController {
     private final LectureService lectureService;
+    private final com.raghav.peadologicalbackend.repository.UserRepository userRepository;
+    private final com.raghav.peadologicalbackend.repository.TeacherProfileRepository teacherProfileRepository;
 
     @PostMapping
     @PreAuthorize("hasRole('TEACHER')")
@@ -38,6 +40,19 @@ public class LectureController {
         request.setLectureTitle(lectureTitle);
         
         return new ResponseEntity<>(lectureService.createLecture(request, audio), HttpStatus.CREATED);
+    }
+    
+    @GetMapping("/my-recent")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<List<LectureResponse>> getMyRecentLectures() {
+        String username = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        com.raghav.peadologicalbackend.entity.Users user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        com.raghav.peadologicalbackend.entity.TeacherProfile profile = teacherProfileRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new RuntimeException("Teacher profile not found"));
+
+        return ResponseEntity.ok(lectureService.getRecentLectures(profile.getId())); 
     }
 
     @GetMapping("/{id}")

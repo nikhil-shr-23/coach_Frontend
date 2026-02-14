@@ -77,6 +77,10 @@ public class TeacherProfileService {
         response.setDepartment(profile.getDepartment());
         response.setName(profile.getUser().getName());
         response.setEmail(profile.getUser().getEmail());
+        
+        timetableRepository.findByTeacherProfileId(profile.getId())
+                .ifPresent(timetable -> response.setTimetableId(timetable.getId()));
+
         return response;
     }
 
