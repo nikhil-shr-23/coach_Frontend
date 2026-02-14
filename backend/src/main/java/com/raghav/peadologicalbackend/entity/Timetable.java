@@ -18,4 +18,9 @@ public class Timetable {
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "teacher_profile_id", nullable = false, unique = true)
     private TeacherProfile teacherProfile;
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public TeacherProfile getTeacherProfile() { return teacherProfile; }
+    public void setTeacherProfile(TeacherProfile teacherProfile) { this.teacherProfile = teacherProfile; }
 }

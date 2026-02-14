@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,122 +42,104 @@ interface Faculty {
   lastActive: string;
 }
 
-const SCHOOL = {
-  name: "School of Engineering & Technology",
-  shortName: "SOET",
-  dean: "Dr. Rajesh Kumar",
-  totalFaculty: 62,
-  totalLectures: 184,
-  avgScore: 78,
-};
-
-const DEPARTMENTS: Department[] = [
-  {
-    name: "Computer Science (CSE)",
-    facultyCount: 24,
-    lecturesAnalyzed: 85,
-    avgScore: 81,
-  },
-  {
-    name: "Electronics (ECE)",
-    facultyCount: 12,
-    lecturesAnalyzed: 32,
-    avgScore: 76,
-  },
-  {
-    name: "Mechanical (ME)",
-    facultyCount: 14,
-    lecturesAnalyzed: 41,
-    avgScore: 74,
-  },
-  { name: "Civil (CE)", facultyCount: 12, lecturesAnalyzed: 26, avgScore: 79 },
-];
-
-const FACULTY_LIST: Faculty[] = [
-  {
-    id: "f1",
-    name: "Dr. Ananya Mehta",
-    department: "Computer Science",
-    lecturesAnalyzed: 24,
-    avgScore: 81,
-    status: "active",
-    lastActive: "2 hours ago",
-  },
-  {
-    id: "f2",
-    name: "Prof. Suresh Gupta",
-    department: "Mechanical",
-    lecturesAnalyzed: 18,
-    avgScore: 72,
-    status: "active",
-    lastActive: "1 day ago",
-  },
-  {
-    id: "f3",
-    name: "Dr. Kavita Singh",
-    department: "Electronics",
-    lecturesAnalyzed: 15,
-    avgScore: 78,
-    status: "active",
-    lastActive: "3 days ago",
-  },
-  {
-    id: "f4",
-    name: "Mr. Rahul Sharma",
-    department: "Computer Science",
-    lecturesAnalyzed: 12,
-    avgScore: 85,
-    status: "active",
-    lastActive: "5 hours ago",
-  },
-  {
-    id: "f5",
-    name: "Ms. Priyanka Das",
-    department: "Civil",
-    lecturesAnalyzed: 9,
-    avgScore: 79,
-    status: "inactive",
-    lastActive: "1 week ago",
-  },
-  {
-    id: "f6",
-    name: "Dr. Amit Verma",
-    department: "Mechanical",
-    lecturesAnalyzed: 22,
-    avgScore: 75,
-    status: "active",
-    lastActive: "2 days ago",
-  },
-  {
-    id: "f7",
-    name: "Prof. Neha Kapoor",
-    department: "Electronics",
-    lecturesAnalyzed: 17,
-    avgScore: 74,
-    status: "active",
-    lastActive: "1 day ago",
-  },
-  {
-    id: "f8",
-    name: "Dr. Vikas Reddy",
-    department: "Civil",
-    lecturesAnalyzed: 17,
-    avgScore: 79,
-    status: "active",
-    lastActive: "4 hours ago",
-  },
-];
-
 function getScoreColor(score: number) {
   if (score >= 80) return "text-emerald-600";
   if (score >= 70) return "text-amber-600";
   return "text-red-500";
 }
 
-export default function DeanDashboardPage() {
+function DeanDashboardContent() {
+  const searchParams = useSearchParams();
+  const schoolNameParam =
+    searchParams.get("school") || "School of Engineering & Technology";
   const [searchQuery, setSearchQuery] = useState("");
+  const [facultyList, setFacultyList] = useState<Faculty[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredFaculty = FACULTY_LIST.filter(
+  // Derived state for agg stats
+  const schoolStats = {
+    name: schoolNameParam,
+    shortName: schoolNameParam
+      .split(" ")
+      .map((w: string) => w[0])
+      .join("")
+      .toUpperCase()
+      .substring(0, 4),
+    dean: "Dean Name", // Placeholder
+    totalFaculty: facultyList.length,
+    totalLectures: facultyList.reduce((acc, f) => acc + f.lecturesAnalyzed, 0),
+    avgScore:
+      facultyList.length > 0
+        ? Math.round(
+            facultyList.reduce((acc, f) => acc + f.avgScore, 0) /
+              facultyList.length,
+          )
+        : 0,
+  };
+
+  // Derive departments from faculty list
+  const departmentsMap = new Map<
+    string,
+    { count: number; lectures: number; scoreSum: number }
+  >();
+  facultyList.forEach((f) => {
+    const dept = f.department || "General";
+    if (!departmentsMap.has(dept)) {
+      departmentsMap.set(dept, { count: 0, lectures: 0, scoreSum: 0 });
+    }
+    const entry = departmentsMap.get(dept)!;
+    entry.count++;
+    entry.lectures += f.lecturesAnalyzed;
+    entry.scoreSum += f.avgScore;
+  });
+
+  const departments: Department[] = Array.from(departmentsMap.entries()).map(
+    ([name, stats]) => ({
+      name,
+      facultyCount: stats.count,
+      lecturesAnalyzed: stats.lectures,
+      avgScore: Math.round(stats.scoreSum / stats.count),
+    }),
+  );
+
+  useEffect(() => {
+    const fetchFaculty = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(
+          `http://localhost:8080/api/dashboard/school/${encodeURIComponent(schoolNameParam)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const mappedFaculty: Faculty[] = data.map((item: any) => ({
+            id: item.id.toString(),
+            name: item.name,
+            department: item.department || "General",
+            lecturesAnalyzed: item.lecturesAnalyzed || 0,
+            avgScore: item.avgScore || 0,
+            status: "active",
+            lastActive: item.lastActive
+              ? new Date(item.lastActive).toLocaleDateString()
+              : "N/A",
+          }));
+          setFacultyList(mappedFaculty);
+        }
+      } catch (error) {
+        console.error("Failed to fetch faculty", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchFaculty();
+  }, [schoolNameParam]);
+
+  const filteredFaculty = facultyList.filter(
     (faculty) =>
       faculty.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       faculty.department.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -197,14 +180,14 @@ export default function DeanDashboardPage() {
               variant="outline"
               className="border-dashed font-ui text-xs uppercase tracking-wider px-3 py-1"
             >
-              Dean · {SCHOOL.shortName}
+              Dean · {schoolStats.shortName}
             </Badge>
             <Notifications />
             <Separator orientation="vertical" className="h-6" />
             <UserNav
-              name={SCHOOL.dean}
-              email="dean.soet@krmangalam.edu.in"
-              initials="RK"
+              name={schoolStats.dean}
+              email="dean@krmangalam.edu.in"
+              initials="DN"
               role="Dean"
             />
           </div>
@@ -215,13 +198,13 @@ export default function DeanDashboardPage() {
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <h2 className="font-display text-2xl lg:text-3xl font-bold text-foreground">
-              {SCHOOL.name}
+              {schoolStats.name}
             </h2>
             <Badge
               variant="secondary"
               className="font-ui text-xs uppercase tracking-wider"
             >
-              {SCHOOL.shortName}
+              {schoolStats.shortName}
             </Badge>
           </div>
           <p className="font-sans text-muted-foreground text-sm">
@@ -253,7 +236,7 @@ export default function DeanDashboardPage() {
               </span>
             </div>
             <p className="font-display text-2xl font-bold text-foreground">
-              {SCHOOL.totalFaculty}
+              {schoolStats.totalFaculty}
             </p>
           </div>
           <div className="border-2 border-dashed border-border rounded-xl p-4 bg-card">
@@ -278,7 +261,7 @@ export default function DeanDashboardPage() {
               </span>
             </div>
             <p className="font-display text-2xl font-bold text-foreground">
-              {SCHOOL.totalLectures}
+              {schoolStats.totalLectures}
             </p>
           </div>
           <div className="border-2 border-dashed border-border rounded-xl p-4 bg-card">
@@ -303,9 +286,9 @@ export default function DeanDashboardPage() {
               </span>
             </div>
             <p
-              className={`font-display text-2xl font-bold ${getScoreColor(SCHOOL.avgScore)}`}
+              className={`font-display text-2xl font-bold ${getScoreColor(schoolStats.avgScore)}`}
             >
-              {SCHOOL.avgScore}%
+              {schoolStats.avgScore}%
             </p>
           </div>
           <div className="border-2 border-dashed border-border rounded-xl p-4 bg-card">
@@ -338,7 +321,7 @@ export default function DeanDashboardPage() {
           Department Performance
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {DEPARTMENTS.map((dept) => (
+          {departments.map((dept) => (
             <Card
               key={dept.name}
               className="border border-dashed border-border/70 p-4"
@@ -416,79 +399,87 @@ export default function DeanDashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-dashed divide-border">
-                {filteredFaculty.map((faculty) => (
-                  <tr
-                    key={faculty.id}
-                    className="hover:bg-muted/20 transition-colors group"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="w-8 h-8 border border-dashed border-border">
-                          <AvatarFallback className="text-[10px] font-bold bg-primary/5 text-primary">
-                            {faculty.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-sans text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
-                            {faculty.name}
-                          </p>
-                          <p
-                            className={`text-[10px] font-ui uppercase tracking-wide ${faculty.status === "active" ? "text-emerald-600" : "text-muted-foreground"}`}
-                          >
-                            {faculty.status}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm font-ui text-muted-foreground">
-                      {faculty.department}
-                    </td>
-                    <td className="px-6 py-4 text-sm font-sans font-medium text-foreground">
-                      {faculty.lecturesAnalyzed}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-bold ${
-                          faculty.avgScore >= 80
-                            ? "bg-emerald-500/10 text-emerald-600"
-                            : faculty.avgScore >= 70
-                              ? "bg-amber-500/10 text-amber-600"
-                              : "bg-red-500/10 text-red-600"
-                        }`}
-                      >
-                        {faculty.avgScore}%
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-xs font-ui text-muted-foreground">
-                      {faculty.lastActive}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 border border-dashed border-border hover:bg-primary/5 hover:border-primary/30"
-                      >
-                        <span className="sr-only">Open menu</span>
-                        <svg
-                          className="w-4 h-4 text-muted-foreground"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth={1.5}
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
-                          />
-                        </svg>
-                      </Button>
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-10">
+                      Loading faculty data...
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filteredFaculty.map((faculty) => (
+                    <tr
+                      key={faculty.id}
+                      className="hover:bg-muted/20 transition-colors group"
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="w-8 h-8 border border-dashed border-border">
+                            <AvatarFallback className="text-[10px] font-bold bg-primary/5 text-primary">
+                              {faculty.name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-sans text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                              {faculty.name}
+                            </p>
+                            <p
+                              className={`text-[10px] font-ui uppercase tracking-wide ${faculty.status === "active" ? "text-emerald-600" : "text-muted-foreground"}`}
+                            >
+                              {faculty.status}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm font-ui text-muted-foreground">
+                        {faculty.department}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-sans font-medium text-foreground">
+                        {faculty.lecturesAnalyzed}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-bold ${
+                            faculty.avgScore >= 80
+                              ? "bg-emerald-500/10 text-emerald-600"
+                              : faculty.avgScore >= 70
+                                ? "bg-amber-500/10 text-amber-600"
+                                : "bg-red-500/10 text-red-600"
+                          }`}
+                        >
+                          {faculty.avgScore}%
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-xs font-ui text-muted-foreground">
+                        {faculty.lastActive}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 border border-dashed border-border hover:bg-primary/5 hover:border-primary/30"
+                        >
+                          <span className="sr-only">Open menu</span>
+                          <svg
+                            className="w-4 h-4 text-muted-foreground"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={1.5}
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
+                            />
+                          </svg>
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -509,5 +500,13 @@ export default function DeanDashboardPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function DeanDashboardPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DeanDashboardContent />
+    </Suspense>
   );
 }

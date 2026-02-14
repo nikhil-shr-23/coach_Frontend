@@ -49,4 +49,23 @@ public class Lecture {
             uploadedAt = LocalDateTime.now();
         }
     }
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getLectureTitle() { return lectureTitle; }
+    public void setLectureTitle(String lectureTitle) { this.lectureTitle = lectureTitle; }
+    public String getLectureAudioUrl() { return lectureAudioUrl; }
+    public void setLectureAudioUrl(String lectureAudioUrl) { this.lectureAudioUrl = lectureAudioUrl; }
+    public Double getScore() { return score; }
+    public void setScore(Double score) { this.score = score; }
+    public LocalDateTime getUploadedAt() { return uploadedAt; }
+    public void setUploadedAt(LocalDateTime uploadedAt) { this.uploadedAt = uploadedAt; }
+    public String getAnalysisContent() { return analysisContent; }
+    public void setAnalysisContent(String analysisContent) { this.analysisContent = analysisContent; }
+    public String getScoreReasoning() { return scoreReasoning; }
+    public void setScoreReasoning(String scoreReasoning) { this.scoreReasoning = scoreReasoning; }
+    public TeacherProfile getTeacherProfile() { return teacherProfile; }
+    public void setTeacherProfile(TeacherProfile teacherProfile) { this.teacherProfile = teacherProfile; }
+    public ClassEntity getClassSlot() { return classSlot; }
+    public void setClassSlot(ClassEntity classSlot) { this.classSlot = classSlot; }
 }

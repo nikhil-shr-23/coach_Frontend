@@ -64,7 +64,10 @@ async def validate_audio_file(file: UploadFile) -> None:
     await file.seek(0)
 
 
-def validate_api_keys(openai_key: str | None) -> None:
+def validate_api_keys(openai_key: str | None, nvidia_key: str | None) -> None:
     """Validate that required API keys are present."""
     if not openai_key or len(openai_key.strip()) == 0:
         raise ValueError("OPENAI_API_KEY is missing or empty in environment")
+    
+    if not nvidia_key or len(nvidia_key.strip()) == 0:
+        raise ValueError("NVIDIA_API_KEY is missing or empty in environment")

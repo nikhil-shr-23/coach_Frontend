@@ -10,6 +10,11 @@ public class WhisperResponse {
     
     private AnalysisData data;
 
+    public String getRequestId() { return requestId; }
+    public void setRequestId(String requestId) { this.requestId = requestId; }
+    public AnalysisData getData() { return data; }
+    public void setData(AnalysisData data) { this.data = data; }
+
     @Data
     public static class AnalysisData {
         private String analysis;
@@ -22,5 +27,14 @@ public class WhisperResponse {
         
         @JsonProperty("processing_time_seconds")
         private Double processingTimeSeconds;
+
+        public String getAnalysis() { return analysis; }
+        public void setAnalysis(String analysis) { this.analysis = analysis; }
+        public Double getPedagogicalScore() { return pedagogicalScore; }
+        public void setPedagogicalScore(Double pedagogicalScore) { this.pedagogicalScore = pedagogicalScore; }
+        public String getScoreReasoning() { return scoreReasoning; }
+        public void setScoreReasoning(String scoreReasoning) { this.scoreReasoning = scoreReasoning; }
+        public Double getProcessingTimeSeconds() { return processingTimeSeconds; }
+        public void setProcessingTimeSeconds(Double processingTimeSeconds) { this.processingTimeSeconds = processingTimeSeconds; }
     }
 }

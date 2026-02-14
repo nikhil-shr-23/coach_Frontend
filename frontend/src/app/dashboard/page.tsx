@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,129 +39,6 @@ interface School {
   status: "active" | "pending" | "inactive";
 }
 
-const SCHOOLS: School[] = [
-  {
-    id: "soet",
-    name: "School of Engineering & Technology",
-    shortName: "SOET",
-    dean: "Dr. Rajesh Kumar",
-    facultyCount: 62,
-    lecturesAnalyzed: 184,
-    avgScore: 78,
-    status: "active",
-  },
-  {
-    id: "soad",
-    name: "School of Architecture & Design",
-    shortName: "SOAD",
-    dean: "Dr. Meena Sharma",
-    facultyCount: 28,
-    lecturesAnalyzed: 91,
-    avgScore: 82,
-    status: "active",
-  },
-  {
-    id: "somc",
-    name: "School of Management & Commerce",
-    shortName: "SOMC",
-    dean: "Dr. Ankit Verma",
-    facultyCount: 45,
-    lecturesAnalyzed: 132,
-    avgScore: 75,
-    status: "active",
-  },
-  {
-    id: "somj",
-    name: "School of Media & Journalism",
-    shortName: "SOMJ",
-    dean: "Dr. Priya Singh",
-    facultyCount: 22,
-    lecturesAnalyzed: 67,
-    avgScore: 80,
-    status: "active",
-  },
-  {
-    id: "soed",
-    name: "School of Education",
-    shortName: "SOED",
-    dean: "Dr. Sunil Gupta",
-    facultyCount: 30,
-    lecturesAnalyzed: 105,
-    avgScore: 85,
-    status: "active",
-  },
-  {
-    id: "sols",
-    name: "School of Legal Studies",
-    shortName: "SOLS",
-    dean: "Dr. Kavita Rao",
-    facultyCount: 26,
-    lecturesAnalyzed: 72,
-    avgScore: 77,
-    status: "active",
-  },
-  {
-    id: "sohs",
-    name: "School of Health Sciences",
-    shortName: "SOHS",
-    dean: "Dr. Arun Patel",
-    facultyCount: 38,
-    lecturesAnalyzed: 114,
-    avgScore: 81,
-    status: "active",
-  },
-  {
-    id: "sobs",
-    name: "School of Basic Sciences",
-    shortName: "SOBS",
-    dean: "Dr. Neha Joshi",
-    facultyCount: 34,
-    lecturesAnalyzed: 98,
-    avgScore: 76,
-    status: "pending",
-  },
-  {
-    id: "sofa",
-    name: "School of Fine Arts",
-    shortName: "SOFA",
-    dean: "Dr. Vikram Bhat",
-    facultyCount: 18,
-    lecturesAnalyzed: 43,
-    avgScore: 83,
-    status: "active",
-  },
-  {
-    id: "sohs2",
-    name: "School of Hospitality Sciences",
-    shortName: "SOHS",
-    dean: "Dr. Rekha Nair",
-    facultyCount: 20,
-    lecturesAnalyzed: 56,
-    avgScore: 79,
-    status: "pending",
-  },
-  {
-    id: "soas",
-    name: "School of Applied Sciences",
-    shortName: "SOAS",
-    dean: "Dr. Deepak Mishra",
-    facultyCount: 32,
-    lecturesAnalyzed: 88,
-    avgScore: 74,
-    status: "active",
-  },
-  {
-    id: "sop",
-    name: "School of Pharmacy",
-    shortName: "SOP",
-    dean: "Dr. Pooja Agarwal",
-    facultyCount: 24,
-    lecturesAnalyzed: 61,
-    avgScore: 80,
-    status: "inactive",
-  },
-];
-
 function getStatusColor(status: School["status"]) {
   switch (status) {
     case "active":
@@ -182,20 +59,62 @@ function getScoreColor(score: number) {
 export default function DashboardPage() {
   const [currentRole] = useState<UserRole>("superadmin");
   const [searchQuery, setSearchQuery] = useState("");
+  const [schools, setSchools] = useState<School[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredSchools = SCHOOLS.filter(
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("http://localhost:8080/api/dashboard/stats", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const mappedSchools: School[] = data.map((item: any) => ({
+            id: item.schoolName.toLowerCase().replace(/\s+/g, "-"),
+            name: item.schoolName,
+            shortName: item.schoolName
+              .split(" ")
+              .map((w: string) => w[0])
+              .join("")
+              .toUpperCase(),
+            dean: "TBD",
+            facultyCount: item.facultyCount,
+            lecturesAnalyzed: item.lecturesAnalyzed,
+            avgScore: item.avgScore,
+            status: "active",
+          }));
+          setSchools(mappedSchools);
+        }
+      } catch (error) {
+        console.error("Failed to fetch dashboard stats", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  const filteredSchools = schools.filter(
     (school) =>
       school.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       school.shortName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       school.dean.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const totalFaculty = SCHOOLS.reduce((sum, s) => sum + s.facultyCount, 0);
-  const totalLectures = SCHOOLS.reduce((sum, s) => sum + s.lecturesAnalyzed, 0);
-  const avgOverallScore = Math.round(
-    SCHOOLS.reduce((sum, s) => sum + s.avgScore, 0) / SCHOOLS.length,
-  );
-  const activeSchools = SCHOOLS.filter((s) => s.status === "active").length;
+  const totalFaculty = schools.reduce((sum, s) => sum + s.facultyCount, 0);
+  const totalLectures = schools.reduce((sum, s) => sum + s.lecturesAnalyzed, 0);
+  const avgOverallScore =
+    schools.length > 0
+      ? Math.round(
+          schools.reduce((sum, s) => sum + s.avgScore, 0) / schools.length,
+        )
+      : 0;
+  const activeSchools = schools.filter((s) => s.status === "active").length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -264,7 +183,7 @@ export default function DashboardPage() {
           {[
             {
               label: "Total Schools",
-              value: SCHOOLS.length.toString(),
+              value: schools.length.toString(),
               icon: (
                 <svg
                   className="w-4 h-4"
@@ -390,99 +309,112 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-          {filteredSchools.map((school) => (
-            <Card
-              key={school.id}
-              className="border-2 border-dashed border-border/70 hover:border-primary/30 transition-all duration-300 hover:shadow-md group cursor-pointer"
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-10 h-10 border border-dashed border-primary/20">
-                      <AvatarFallback className="font-ui text-xs font-bold bg-primary/10 text-primary">
-                        {school.shortName.slice(0, 2)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <CardTitle className="font-sans text-sm font-semibold text-foreground group-hover:text-primary transition-colors leading-tight">
-                        {school.shortName}
-                      </CardTitle>
-                      <CardDescription className="text-xs font-ui mt-0.5 leading-tight">
-                        {school.name}
-                      </CardDescription>
+          {isLoading ? (
+            <div className="col-span-1 md:col-span-2 xl:col-span-3 text-center py-10">
+              Loading schools data...
+            </div>
+          ) : filteredSchools.length === 0 ? (
+            <div className="col-span-1 md:col-span-2 xl:col-span-3 text-center py-10 text-muted-foreground">
+              No schools found.
+            </div>
+          ) : (
+            filteredSchools.map((school) => (
+              <Card
+                key={school.id}
+                className="border-2 border-dashed border-border/70 hover:border-primary/30 transition-all duration-300 hover:shadow-md group cursor-pointer"
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="w-10 h-10 border border-dashed border-primary/20">
+                        <AvatarFallback className="font-ui text-xs font-bold bg-primary/10 text-primary">
+                          {school.shortName.slice(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <CardTitle className="font-sans text-sm font-semibold text-foreground group-hover:text-primary transition-colors leading-tight">
+                          {school.shortName}
+                        </CardTitle>
+                        <CardDescription className="text-xs font-ui mt-0.5 leading-tight">
+                          {school.name}
+                        </CardDescription>
+                      </div>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className={`text-[10px] font-ui uppercase tracking-wider border-dashed ${getStatusColor(school.status)}`}
+                    >
+                      {school.status}
+                    </Badge>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="pt-0">
+                  <Separator className="mb-4 border-dashed" />
+
+                  <div className="flex items-center gap-2 mb-4">
+                    <svg
+                      className="w-3.5 h-3.5 text-muted-foreground/50"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+                      />
+                    </svg>
+                    <span className="text-xs font-ui text-muted-foreground">
+                      {school.dean}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="border border-dashed border-border/50 rounded-lg p-2.5 text-center">
+                      <p className="text-[10px] font-ui text-muted-foreground uppercase tracking-wider">
+                        Faculty
+                      </p>
+                      <p className="font-sans text-base font-bold text-foreground mt-0.5">
+                        {school.facultyCount}
+                      </p>
+                    </div>
+                    <div className="border border-dashed border-border/50 rounded-lg p-2.5 text-center">
+                      <p className="text-[10px] font-ui text-muted-foreground uppercase tracking-wider">
+                        Lectures
+                      </p>
+                      <p className="font-sans text-base font-bold text-foreground mt-0.5">
+                        {school.lecturesAnalyzed}
+                      </p>
+                    </div>
+                    <div className="border border-dashed border-border/50 rounded-lg p-2.5 text-center">
+                      <p className="text-[10px] font-ui text-muted-foreground uppercase tracking-wider">
+                        Score
+                      </p>
+                      <p
+                        className={`font-sans text-base font-bold mt-0.5 ${getScoreColor(school.avgScore)}`}
+                      >
+                        {school.avgScore}%
+                      </p>
                     </div>
                   </div>
-                  <Badge
-                    variant="outline"
-                    className={`text-[10px] font-ui uppercase tracking-wider border-dashed ${getStatusColor(school.status)}`}
+
+                  <Link
+                    href={`/dashboard/dean?school=${encodeURIComponent(school.name)}`}
+                    className="w-full mt-4 block"
                   >
-                    {school.status}
-                  </Badge>
-                </div>
-              </CardHeader>
-
-              <CardContent className="pt-0">
-                <Separator className="mb-4 border-dashed" />
-
-                <div className="flex items-center gap-2 mb-4">
-                  <svg
-                    className="w-3.5 h-3.5 text-muted-foreground/50"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
-                    />
-                  </svg>
-                  <span className="text-xs font-ui text-muted-foreground">
-                    {school.dean}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="border border-dashed border-border/50 rounded-lg p-2.5 text-center">
-                    <p className="text-[10px] font-ui text-muted-foreground uppercase tracking-wider">
-                      Faculty
-                    </p>
-                    <p className="font-sans text-base font-bold text-foreground mt-0.5">
-                      {school.facultyCount}
-                    </p>
-                  </div>
-                  <div className="border border-dashed border-border/50 rounded-lg p-2.5 text-center">
-                    <p className="text-[10px] font-ui text-muted-foreground uppercase tracking-wider">
-                      Lectures
-                    </p>
-                    <p className="font-sans text-base font-bold text-foreground mt-0.5">
-                      {school.lecturesAnalyzed}
-                    </p>
-                  </div>
-                  <div className="border border-dashed border-border/50 rounded-lg p-2.5 text-center">
-                    <p className="text-[10px] font-ui text-muted-foreground uppercase tracking-wider">
-                      Score
-                    </p>
-                    <p
-                      className={`font-sans text-base font-bold mt-0.5 ${getScoreColor(school.avgScore)}`}
+                    <Button
+                      variant="ghost"
+                      className="w-full font-ui text-xs uppercase tracking-wider h-9 border border-dashed border-border/40 hover:border-primary/30 hover:bg-primary/5 transition-all"
                     >
-                      {school.avgScore}%
-                    </p>
-                  </div>
-                </div>
-
-                <Link href="/dashboard/dean" className="w-full mt-4 block">
-                  <Button
-                    variant="ghost"
-                    className="w-full font-ui text-xs uppercase tracking-wider h-9 border border-dashed border-border/40 hover:border-primary/30 hover:bg-primary/5 transition-all"
-                  >
-                    View School Dashboard →
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          ))}
+                      View School Dashboard →
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            ))
+          )}
         </div>
 
         {filteredSchools.length === 0 && (
