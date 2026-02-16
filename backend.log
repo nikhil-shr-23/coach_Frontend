@@ -432,3 +432,8 @@ Hibernate:
         users u1_0 
     where
         u1_0.email=?
+2026-02-14T16:52:49.979+05:30  INFO 27564 --- [pedo] [ionShutdownHook] o.s.boot.tomcat.GracefulShutdown         : Commencing graceful shutdown. Waiting for active requests to complete
+2026-02-14T16:52:50.023+05:30  INFO 27564 --- [pedo] [tomcat-shutdown] o.s.boot.tomcat.GracefulShutdown         : Graceful shutdown complete
+2026-02-14T16:52:50.144+05:30  INFO 27564 --- [pedo] [ionShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-02-14T16:52:50.170+05:30  INFO 27564 --- [pedo] [ionShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-02-14T16:52:50.176+05:30  INFO 27564 --- [pedo] [ionShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
