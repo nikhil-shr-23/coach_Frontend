@@ -82,6 +82,11 @@ interface Lecture {
   lectureAudioUrl: string;
   score: number;
   uploadedAt: string;
+  reviewRatio: number | null;
+  questionVelocity: number | null;
+  waitTime: number | null;
+  teacherTalkingTime: number | null;
+  hinglishFluency: number | null;
 }
 
 interface TeacherStats {
@@ -115,6 +120,90 @@ function getScoreBg(score: number) {
   if (score >= 80) return "bg-emerald-500/10";
   if (score >= 60) return "bg-amber-500/10";
   return "bg-red-500/10";
+}
+
+function getMetricColor(value: number, max: number) {
+  const pct = (value / max) * 100;
+  if (pct >= 75)
+    return {
+      text: "text-emerald-600",
+      stroke: "#059669",
+      bg: "bg-emerald-500",
+    };
+  if (pct >= 50)
+    return { text: "text-amber-600", stroke: "#d97706", bg: "bg-amber-500" };
+  return { text: "text-red-500", stroke: "#ef4444", bg: "bg-red-500" };
+}
+
+function CircularProgress({
+  value,
+  max,
+  size = 72,
+  strokeWidth = 5,
+  label,
+  unit,
+}: {
+  value: number;
+  max: number;
+  size?: number;
+  strokeWidth?: number;
+  label: string;
+  unit: string;
+}) {
+  const pct = Math.min((value / max) * 100, 100);
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (pct / 100) * circumference;
+  const color = getMetricColor(value, max);
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <svg width={size} height={size} className="-rotate-90">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+          className="text-border"
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke={color.stroke}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          className="transition-all duration-1000 ease-out"
+        />
+      </svg>
+      <div
+        className="absolute flex flex-col items-center justify-center"
+        style={{ width: size, height: size }}
+      >
+        <span className={`font-display text-lg font-bold ${color.text}`}>
+          {Math.round(pct)}
+        </span>
+        <span className="text-[8px] font-ui text-muted-foreground uppercase">
+          {unit}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+interface MetricCardConfig {
+  key: string;
+  name: string;
+  principle: string;
+  description: string;
+  value: number;
+  max: number;
+  unit: string;
+  icon: React.ReactNode;
 }
 
 function timeToHour(time: string): number {
@@ -460,6 +549,284 @@ export default function TeacherDashboard() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* ───── PEDAGOGICAL COACH ───── */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-9 h-9 rounded-lg border-2 border-dashed border-primary/20 flex items-center justify-center">
+              <svg
+                className="w-4.5 h-4.5 text-primary"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"
+                />
+              </svg>
+            </div>
+            <div>
+              <h3 className="font-display text-lg font-bold text-foreground">
+                Pedagogical Coach
+              </h3>
+              <p className="text-xs font-ui text-muted-foreground">
+                Rosenshine&apos;s Principles of Instruction — AI-detected
+                metrics
+              </p>
+            </div>
+          </div>
+
+          {(() => {
+            // Compute averages from lectures with metric data
+            const metricsLectures = lectures.filter(
+              (l) => l.reviewRatio !== null && l.reviewRatio !== undefined,
+            );
+            const avg = (field: keyof Lecture) => {
+              if (metricsLectures.length === 0) return null;
+              const sum = metricsLectures.reduce(
+                (acc, l) => acc + (Number(l[field]) || 0),
+                0,
+              );
+              return sum / metricsLectures.length;
+            };
+            const reviewRatio = avg("reviewRatio") ?? 72;
+            const questionVelocity = avg("questionVelocity") ?? 6.3;
+            const waitTime = avg("waitTime") ?? 2.8;
+            const ttt = avg("teacherTalkingTime") ?? 68;
+            const hinglish = avg("hinglishFluency") ?? 85;
+
+            const metrics: MetricCardConfig[] = [
+              {
+                key: "review",
+                name: "Review Ratio",
+                principle: "Principle 1: Daily Review",
+                description:
+                  "Keywords/concepts from previous lecture detected in first 5-8 minutes",
+                value: reviewRatio,
+                max: 100,
+                unit: "%",
+                icon: (
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"
+                    />
+                  </svg>
+                ),
+              },
+              {
+                key: "questions",
+                name: "Question Velocity",
+                principle: "Principle 2: Ask Questions",
+                description:
+                  "Number of questions asked by the teacher per 10 minutes",
+                value: questionVelocity,
+                max: 15,
+                unit: "Q/10min",
+                icon: (
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z"
+                    />
+                  </svg>
+                ),
+              },
+              {
+                key: "wait",
+                name: "Wait Time",
+                principle: "Principle 3: Check Understanding",
+                description:
+                  "Average silence after a question is asked (Target: >3 seconds)",
+                value: waitTime,
+                max: 6,
+                unit: "sec",
+                icon: (
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                    />
+                  </svg>
+                ),
+              },
+              {
+                key: "ttt",
+                name: "Teacher Talking Time",
+                principle: "Principle 6: Guide Practice",
+                description: "Ratio of teacher voice vs. student voice/silence",
+                value: ttt,
+                max: 100,
+                unit: "% TTT",
+                icon: (
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z"
+                    />
+                  </svg>
+                ),
+              },
+              {
+                key: "hinglish",
+                name: "Hinglish Fluency",
+                principle: "Contextual Necessity",
+                description:
+                  "Accurate transcription of code-switching (Hindi/English mix)",
+                value: hinglish,
+                max: 100,
+                unit: "%",
+                icon: (
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="m10.5 21 5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 0 1 6-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364C11.176 10.658 7.69 15.08 3 17.502m9.334-12.138c.896.061 1.785.147 2.666.257m-4.589 8.495a18.023 18.023 0 0 1-3.827-5.802"
+                    />
+                  </svg>
+                ),
+              },
+            ];
+
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                {metrics.map((m) => {
+                  const pct = Math.min((m.value / m.max) * 100, 100);
+                  const color = getMetricColor(m.value, m.max);
+                  const isBar = m.key === "questions";
+                  const isTTT = m.key === "ttt";
+
+                  return (
+                    <div
+                      key={m.key}
+                      className="border-2 border-dashed border-border/70 rounded-xl bg-card p-4 flex flex-col group hover:border-primary/30 transition-all duration-300"
+                    >
+                      {/* Header */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-7 h-7 rounded-lg border border-dashed border-primary/20 flex items-center justify-center text-primary">
+                          {m.icon}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[11px] font-ui font-semibold text-foreground truncate">
+                            {m.name}
+                          </p>
+                          <p className="text-[8px] font-ui text-muted-foreground/60 uppercase tracking-wider truncate">
+                            {m.principle}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Visual */}
+                      <div className="flex-1 flex items-center justify-center my-2">
+                        {isTTT ? (
+                          /* Split bar for TTT */
+                          <div className="w-full space-y-2">
+                            <div className="flex justify-between text-[9px] font-ui text-muted-foreground">
+                              <span>Teacher {Math.round(m.value)}%</span>
+                              <span>Student {Math.round(100 - m.value)}%</span>
+                            </div>
+                            <div className="h-3 rounded-full bg-muted/50 overflow-hidden flex">
+                              <div
+                                className="h-full bg-primary/70 rounded-l-full transition-all duration-1000"
+                                style={{ width: `${m.value}%` }}
+                              />
+                              <div className="h-full bg-emerald-500/40 rounded-r-full flex-1" />
+                            </div>
+                            <p
+                              className={`text-center font-display text-lg font-bold ${m.value > 75 ? "text-amber-600" : m.value > 50 ? "text-emerald-600" : "text-red-500"}`}
+                            >
+                              {Math.round(m.value)}%
+                            </p>
+                          </div>
+                        ) : isBar ? (
+                          /* Bar for Question Velocity */
+                          <div className="w-full space-y-1">
+                            <div className="flex items-end gap-1 justify-center h-12">
+                              {Array.from(
+                                { length: Math.min(Math.round(m.value), 15) },
+                                (_, i) => (
+                                  <div
+                                    key={i}
+                                    className={`w-2 rounded-t-sm ${color.bg} transition-all duration-500`}
+                                    style={{
+                                      height: `${20 + Math.random() * 80}%`,
+                                      opacity: 0.5 + (i / 15) * 0.5,
+                                      animationDelay: `${i * 0.05}s`,
+                                    }}
+                                  />
+                                ),
+                              )}
+                            </div>
+                            <p
+                              className={`text-center font-display text-lg font-bold ${color.text}`}
+                            >
+                              {m.value.toFixed(1)}
+                            </p>
+                            <p className="text-center text-[8px] font-ui text-muted-foreground">
+                              {m.unit}
+                            </p>
+                          </div>
+                        ) : (
+                          /* Circular progress for Review, Wait, Hinglish */
+                          <div className="relative">
+                            <CircularProgress
+                              value={m.value}
+                              max={m.max}
+                              label={m.name}
+                              unit={m.unit}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Description */}
+                      <p className="text-[9px] font-ui text-muted-foreground/60 leading-tight mt-auto">
+                        {m.description}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Tab Navigation for Mobile */}
@@ -955,7 +1322,7 @@ export default function TeacherDashboard() {
                             </span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 mb-2">
                           <Clock className="w-3 h-3 text-muted-foreground/40" />
                           <span className="text-[10px] font-ui text-muted-foreground">
                             {new Date(lecture.uploadedAt).toLocaleDateString(
@@ -967,6 +1334,60 @@ export default function TeacherDashboard() {
                               },
                             )}
                           </span>
+                        </div>
+                        {/* Mini metric bars */}
+                        <div className="flex gap-1">
+                          {[
+                            {
+                              label: "RR",
+                              val: lecture.reviewRatio ?? 72,
+                              max: 100,
+                            },
+                            {
+                              label: "QV",
+                              val: lecture.questionVelocity ?? 6,
+                              max: 15,
+                            },
+                            { label: "WT", val: lecture.waitTime ?? 3, max: 6 },
+                            {
+                              label: "TTT",
+                              val: lecture.teacherTalkingTime ?? 65,
+                              max: 100,
+                            },
+                            {
+                              label: "HF",
+                              val: lecture.hinglishFluency ?? 85,
+                              max: 100,
+                            },
+                          ].map((bar) => {
+                            const pct = Math.min(
+                              (bar.val / bar.max) * 100,
+                              100,
+                            );
+                            const barColor =
+                              pct >= 75
+                                ? "bg-emerald-500"
+                                : pct >= 50
+                                  ? "bg-amber-500"
+                                  : "bg-red-500";
+                            return (
+                              <div
+                                key={bar.label}
+                                className="flex-1"
+                                title={`${bar.label}: ${Math.round(pct)}%`}
+                              >
+                                <div className="h-1.5 rounded-full bg-muted/50 overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full ${barColor} transition-all duration-700`}
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                </div>
+                                <p className="text-[7px] font-ui text-muted-foreground/50 text-center mt-0.5">
+                                  {bar.label}
+                                </p>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     ))

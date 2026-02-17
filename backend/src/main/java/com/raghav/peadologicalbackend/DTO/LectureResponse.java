@@ -19,6 +19,11 @@ public class LectureResponse {
     private Long classSlotId;
     private String analysisContent;
     private String scoreReasoning;
+    private Double reviewRatio;
+    private Double questionVelocity;
+    private Double waitTime;
+    private Double teacherTalkingTime;
+    private Double hinglishFluency;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

@@ -212,6 +212,11 @@ public class LectureService {
         response.setClassSlotId(lecture.getClassSlot() != null ? lecture.getClassSlot().getId() : null);
         response.setAnalysisContent(lecture.getAnalysisContent());
         response.setScoreReasoning(lecture.getScoreReasoning());
+        response.setReviewRatio(lecture.getReviewRatio());
+        response.setQuestionVelocity(lecture.getQuestionVelocity());
+        response.setWaitTime(lecture.getWaitTime());
+        response.setTeacherTalkingTime(lecture.getTeacherTalkingTime());
+        response.setHinglishFluency(lecture.getHinglishFluency());
         return response;
     }
 
@@ -219,17 +224,7 @@ public class LectureService {
     public List<LectureResponse> getRecentLectures(Long teacherProfileId) {
         return lectureRepository.findTop5ByTeacherProfileIdOrderByUploadedAtDesc(teacherProfileId)
                 .stream()
-                .map(lecture -> new LectureResponse(
-                        lecture.getId(),
-                        lecture.getLectureTitle(),
-                        lecture.getLectureAudioUrl(),
-                        lecture.getScore(),
-                        lecture.getUploadedAt(),
-                        lecture.getTeacherProfile().getId(),
-                        lecture.getClassSlot() != null ? lecture.getClassSlot().getId() : null,
-                        lecture.getAnalysisContent(),
-                        lecture.getScoreReasoning()
-                ))
+                .map(this::toResponse)
                 .toList();
     }
 }

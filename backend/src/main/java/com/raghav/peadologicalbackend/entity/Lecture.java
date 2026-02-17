@@ -35,6 +35,21 @@ public class Lecture {
     @Column(columnDefinition = "TEXT")
     private String scoreReasoning;
 
+    @Column
+    private Double reviewRatio;
+
+    @Column
+    private Double questionVelocity;
+
+    @Column
+    private Double waitTime;
+
+    @Column
+    private Double teacherTalkingTime;
+
+    @Column
+    private Double hinglishFluency;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "teacher_profile_id", nullable = false)
     private TeacherProfile teacherProfile;

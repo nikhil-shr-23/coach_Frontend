@@ -280,6 +280,10 @@ export default function AdminLoginPage() {
                     type="button"
                     variant="outline"
                     className="w-full h-11 font-ui font-medium text-sm tracking-wide border-dashed transition-all duration-200"
+                    onClick={() => {
+                      window.location.href =
+                        "http://localhost:8080/oauth2/authorization/microsoft";
+                    }}
                   >
                     <svg
                       className="w-5 h-5 mr-2"
