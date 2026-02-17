@@ -82,6 +82,8 @@ interface Lecture {
   lectureAudioUrl: string;
   score: number;
   uploadedAt: string;
+  analysisContent: string | null;
+  scoreReasoning: string | null;
   reviewRatio: number | null;
   questionVelocity: number | null;
   waitTime: number | null;
@@ -246,6 +248,7 @@ export default function TeacherDashboard() {
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadResult, setUploadResult] = useState<Lecture | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Active tab for mobile
@@ -389,7 +392,9 @@ export default function TeacherDashboard() {
       });
 
       if (res.ok) {
+        const lectureData = await res.json();
         setUploadSuccess(true);
+        setUploadResult(lectureData);
         setUploadForm({ title: "", classSlotId: "" });
         setAudioFile(null);
         // Refresh lectures
@@ -397,10 +402,6 @@ export default function TeacherDashboard() {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (lecturesRes.ok) setLectures(await lecturesRes.json());
-        setTimeout(() => {
-          setUploadSuccess(false);
-          setIsUploadOpen(false);
-        }, 2000);
       } else {
         alert("Upload failed. Please try again.");
       }
@@ -1219,40 +1220,155 @@ export default function TeacherDashboard() {
                       </button>
                     )}
                   </div>
-                  <Button
-                    onClick={handleUploadRecording}
-                    disabled={!uploadForm.title || uploading}
-                    className="w-full font-ui text-xs uppercase tracking-wider h-10 gap-2"
-                  >
-                    {uploading ? (
-                      <>
-                        <div className="w-3 h-3 border-2 border-dashed border-primary-foreground/50 rounded animate-spin" />
-                        Uploading...
-                      </>
-                    ) : uploadSuccess ? (
-                      <>
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth={2}
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M4.5 12.75l6 6 9-13.5"
-                          />
-                        </svg>
-                        Uploaded!
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="w-3.5 h-3.5" />
-                        Upload Recording
-                      </>
-                    )}
-                  </Button>
+                  {uploadSuccess && uploadResult ? (
+                    /* ── Post-Upload Results Panel ── */
+                    <div className="space-y-4 animate-in fade-in duration-500">
+                      <div className="border-2 border-dashed border-emerald-500/30 rounded-xl bg-emerald-500/5 p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <svg
+                            className="w-5 h-5 text-emerald-500"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={2}
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                            />
+                          </svg>
+                          <span className="font-display text-sm font-bold text-emerald-600">
+                            Analysis Complete
+                          </span>
+                          {uploadResult.score != null && (
+                            <span
+                              className={`ml-auto font-display text-xl font-bold ${getScoreColor(uploadResult.score)}`}
+                            >
+                              {Math.round(uploadResult.score)}
+                              <span className="text-xs font-ui text-muted-foreground">
+                                /100
+                              </span>
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Analysis snippet */}
+                        {uploadResult.analysisContent && (
+                          <p className="text-xs font-sans text-muted-foreground leading-relaxed line-clamp-4 mb-3">
+                            {uploadResult.analysisContent}
+                          </p>
+                        )}
+
+                        {/* 5 Metric mini-cards */}
+                        <div className="grid grid-cols-5 gap-2">
+                          {[
+                            {
+                              label: "Review\nRatio",
+                              abbr: "RR",
+                              val: uploadResult.reviewRatio,
+                              max: 100,
+                              unit: "%",
+                            },
+                            {
+                              label: "Question\nVelocity",
+                              abbr: "QV",
+                              val: uploadResult.questionVelocity,
+                              max: 15,
+                              unit: "Q/10m",
+                            },
+                            {
+                              label: "Wait\nTime",
+                              abbr: "WT",
+                              val: uploadResult.waitTime,
+                              max: 6,
+                              unit: "sec",
+                            },
+                            {
+                              label: "Teacher\nTalk",
+                              abbr: "TTT",
+                              val: uploadResult.teacherTalkingTime,
+                              max: 100,
+                              unit: "%",
+                            },
+                            {
+                              label: "Hinglish\nFluency",
+                              abbr: "HF",
+                              val: uploadResult.hinglishFluency,
+                              max: 100,
+                              unit: "%",
+                            },
+                          ].map((m) => {
+                            const v = m.val ?? 0;
+                            const pct = Math.min((v / m.max) * 100, 100);
+                            const barColor =
+                              pct >= 75
+                                ? "bg-emerald-500"
+                                : pct >= 50
+                                  ? "bg-amber-500"
+                                  : "bg-red-500";
+                            const textColor =
+                              pct >= 75
+                                ? "text-emerald-600"
+                                : pct >= 50
+                                  ? "text-amber-600"
+                                  : "text-red-500";
+                            return (
+                              <div
+                                key={m.abbr}
+                                className="border border-dashed border-border/50 rounded-lg p-2 text-center"
+                              >
+                                <p
+                                  className={`font-display text-sm font-bold ${textColor}`}
+                                >
+                                  {m.abbr === "QV"
+                                    ? v.toFixed(1)
+                                    : Math.round(pct)}
+                                </p>
+                                <div className="h-1 rounded-full bg-muted/50 overflow-hidden my-1">
+                                  <div
+                                    className={`h-full rounded-full ${barColor} transition-all duration-700`}
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                </div>
+                                <p className="text-[7px] font-ui text-muted-foreground/60 leading-tight whitespace-pre-line">
+                                  {m.label}
+                                </p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => {
+                          setUploadSuccess(false);
+                          setUploadResult(null);
+                          setIsUploadOpen(false);
+                        }}
+                        className="w-full font-ui text-xs uppercase tracking-wider h-10"
+                      >
+                        Done
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={handleUploadRecording}
+                      disabled={!uploadForm.title || uploading}
+                      className="w-full font-ui text-xs uppercase tracking-wider h-10 gap-2"
+                    >
+                      {uploading ? (
+                        <>
+                          <div className="w-3 h-3 border-2 border-dashed border-primary-foreground/50 rounded animate-spin" />
+                          Analyzing lecture...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-3.5 h-3.5" />
+                          Upload Recording
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

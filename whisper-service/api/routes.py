@@ -6,7 +6,7 @@ import uuid
 import requests
 
 from services.transcription import transcribe_audio
-from services.nvidia_writer import generate_charter_compliant_output, generate_pedagogical_score
+from services.nvidia_writer import generate_charter_compliant_output, generate_pedagogical_score, extract_pedagogical_metrics
 from middleware.validators import validate_audio_file
 from middleware.privacy import SecureFileHandler, DataRetentionPolicy, sanitize_for_logging
 from middleware.observability import StructuredLogger, metrics_tracker, track_operation
@@ -60,6 +60,22 @@ async def _process_audio_and_generate_response(request_id: str, audio_content: b
             score=score_data.get("score")
         )
         
+        # GUARANTEE 3: Failure Containment - Track metrics extraction
+        metrics_data = {}
+        try:
+            with track_operation("metrics_extraction", request_id):
+                metrics_data = extract_pedagogical_metrics(analysis, transcript)
+            logger.info("Metrics extraction completed", request_id=request_id, metrics=metrics_data)
+        except Exception as e:
+            logger.error("Metrics extraction failed, using defaults", request_id=request_id, error=str(e))
+            metrics_data = {
+                "review_ratio": 50.0,
+                "question_velocity": 3.0,
+                "wait_time": 2.0,
+                "teacher_talking_time": 70.0,
+                "hinglish_fluency": 50.0
+            }
+        
         # Calculate processing time
         processing_time = time.time() - start_time
         
@@ -68,7 +84,12 @@ async def _process_audio_and_generate_response(request_id: str, audio_content: b
             analysis=analysis,
             pedagogical_score=score_data.get("score", 50),
             score_reasoning=score_data.get("reasoning", "Score generated"),
-            processing_time_seconds=round(processing_time, 2)
+            processing_time_seconds=round(processing_time, 2),
+            review_ratio=metrics_data.get("review_ratio"),
+            question_velocity=metrics_data.get("question_velocity"),
+            wait_time=metrics_data.get("wait_time"),
+            teacher_talking_time=metrics_data.get("teacher_talking_time"),
+            hinglish_fluency=metrics_data.get("hinglish_fluency")
         )
         
         return response_data

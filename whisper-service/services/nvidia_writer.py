@@ -298,3 +298,94 @@ Example without syllabus:
     except Exception as e:
         logger.error("Scoring failed", error=str(e))
         raise ExternalAPIError(f"NVIDIA API scoring failed: {str(e)}") from e
+
+
+@retry_with_backoff(max_retries=3, exceptions=(requests.RequestException,))
+def extract_pedagogical_metrics(analysis: str, transcript: str) -> dict:
+    """
+    Extract 5 structured Rosenshine metrics from the analysis and transcript.
+    
+    Returns:
+        dict with review_ratio, question_velocity, wait_time,
+        teacher_talking_time, hinglish_fluency
+    """
+    if not analysis or len(analysis.strip()) == 0:
+        raise ValueError("Analysis cannot be empty")
+
+    prompt = f"""You are an educational metrics extraction engine.
+
+From the pedagogical analysis and transcript below, extract these 5 numeric metrics.
+Be precise — use evidence from the text to estimate each value.
+
+METRICS TO EXTRACT:
+1. review_ratio (0-100): Percentage of first 5-8 minutes that contains review keywords/concepts from a previous lecture. If no review is detected, use 0-20. If strong review is present, use 70-100.
+2. question_velocity (0-15): Number of questions asked by the teacher per 10 minutes. Count explicit questions mentioned in the analysis.
+3. wait_time (0-10): Average seconds of silence after a teacher question. Use the analysis text for clues. If not mentioned, estimate 1-2 seconds.
+4. teacher_talking_time (0-100): Percentage of total speaking time that is the teacher's voice. If "monologue" or "100%", use 90-100. If "interactive", use 50-70.
+5. hinglish_fluency (0-100): How accurately Hindi-English code-switching is captured. If code-switching is present and noted, 70-100. If none detected, 30-50.
+
+PEDAGOGICAL ANALYSIS:
+{analysis}
+
+TRANSCRIPT (first 2000 chars):
+{transcript[:2000]}
+
+Output ONLY valid JSON:
+{{
+  "review_ratio": <number>,
+  "question_velocity": <number>,
+  "wait_time": <number>,
+  "teacher_talking_time": <number>,
+  "hinglish_fluency": <number>
+}}"""
+
+    def _call_nvidia_api():
+        response = requests.post(
+            "https://integrate.api.nvidia.com/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {NVIDIA_API_KEY}",
+                "Accept": "application/json"
+            },
+            json={
+                "model": "meta/llama-4-maverick-17b-128e-instruct",
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.1,
+                "max_tokens": 200
+            },
+            timeout=30.0
+        )
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"].strip()
+
+    try:
+        logger.info("Extracting pedagogical metrics")
+        result = nvidia_circuit_breaker.call(_call_nvidia_api)
+
+        import json
+        if "```json" in result:
+            result = result.split("```json")[1].split("```")[0].strip()
+        elif "```" in result:
+            result = result.split("```")[1].split("```")[0].strip()
+
+        metrics = json.loads(result)
+        # Clamp values to expected ranges
+        metrics["review_ratio"] = max(0, min(100, float(metrics.get("review_ratio", 50))))
+        metrics["question_velocity"] = max(0, min(15, float(metrics.get("question_velocity", 3))))
+        metrics["wait_time"] = max(0, min(10, float(metrics.get("wait_time", 2))))
+        metrics["teacher_talking_time"] = max(0, min(100, float(metrics.get("teacher_talking_time", 70))))
+        metrics["hinglish_fluency"] = max(0, min(100, float(metrics.get("hinglish_fluency", 50))))
+
+        logger.info("Metrics extracted", metrics=metrics)
+        return metrics
+    except json.JSONDecodeError as e:
+        logger.error("Failed to parse metrics JSON", error=str(e))
+        return {
+            "review_ratio": 50.0,
+            "question_velocity": 3.0,
+            "wait_time": 2.0,
+            "teacher_talking_time": 70.0,
+            "hinglish_fluency": 50.0
+        }
+    except Exception as e:
+        logger.error("Metrics extraction failed", error=str(e))
+        raise ExternalAPIError(f"NVIDIA API metrics extraction failed: {str(e)}") from e

@@ -28,3 +28,8 @@ class AnalysisResponse(BaseModel):
     pedagogical_score: int = Field(..., description="Quality score 0-100", ge=0, le=100)
     score_reasoning: str = Field(..., description="Brief explanation of the score")
     processing_time_seconds: float = Field(..., description="Total processing time")
+    review_ratio: Optional[float] = Field(None, description="Review keywords ratio 0-100")
+    question_velocity: Optional[float] = Field(None, description="Questions per 10 min")
+    wait_time: Optional[float] = Field(None, description="Avg silence after question in seconds")
+    teacher_talking_time: Optional[float] = Field(None, description="Teacher voice % 0-100")
+    hinglish_fluency: Optional[float] = Field(None, description="Code-switching accuracy 0-100")

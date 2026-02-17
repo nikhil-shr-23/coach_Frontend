@@ -84,6 +84,11 @@ public class LectureService {
             lecture.setScore(whisperResponse.getData().getPedagogicalScore());
             lecture.setAnalysisContent(whisperResponse.getData().getAnalysis());
             lecture.setScoreReasoning(whisperResponse.getData().getScoreReasoning());
+            lecture.setReviewRatio(whisperResponse.getData().getReviewRatio());
+            lecture.setQuestionVelocity(whisperResponse.getData().getQuestionVelocity());
+            lecture.setWaitTime(whisperResponse.getData().getWaitTime());
+            lecture.setTeacherTalkingTime(whisperResponse.getData().getTeacherTalkingTime());
+            lecture.setHinglishFluency(whisperResponse.getData().getHinglishFluency());
         }
 
         return toResponse(lectureRepository.save(lecture));
