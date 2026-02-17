@@ -162,4 +162,28 @@ public class DashboardController {
 
         return ResponseEntity.ok(result);
     }
+
+    @GetMapping("/dean/me")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<Map<String, Object>> getDeanInfo() {
+        String username = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        com.raghav.peadologicalbackend.entity.Users user = userRepo.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        boolean isSuperAdmin = user.getRoles() == com.raghav.peadologicalbackend.entity.Roles.SUPER_ADMIN;
+
+        Map<String, Object> info = new HashMap<>();
+        info.put("name", user.getName());
+        info.put("email", user.getEmail());
+        info.put("role", user.getRoles().name());
+        info.put("isSuperAdmin", isSuperAdmin);
+
+        if (!isSuperAdmin) {
+            TeacherProfile profile = teacherRepo.findByUserId(user.getId())
+                    .orElse(null);
+            info.put("school", profile != null ? profile.getSchool() : null);
+        }
+
+        return ResponseEntity.ok(info);
+    }
 }

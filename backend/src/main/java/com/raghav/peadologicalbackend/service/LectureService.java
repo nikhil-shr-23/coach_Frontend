@@ -96,7 +96,64 @@ public class LectureService {
 
     @Transactional
     public LectureResponse createLecture(LectureCreateRequest request) {
-        return createLecture(request, null);
+        if (!hasRole("TEACHER")) {
+            throw new ForbiddenException("Only TEACHER can create lectures.");
+        }
+
+        if (request.getTeacherProfileId() == null) {
+            throw new BadRequestException("Teacher profile id is required.");
+        }
+        if (request.getLectureTitle() == null || request.getLectureTitle().trim().isEmpty()) {
+            throw new BadRequestException("Lecture title is required.");
+        }
+
+        TeacherProfile teacherProfile = teacherProfileRepository.findById(request.getTeacherProfileId())
+                .orElseThrow(() -> new NotFoundException("Teacher profile not found."));
+        ensureTeacherOwnsProfile(teacherProfile);
+
+        ClassEntity classSlot = null;
+        if (request.getClassSlotId() != null) {
+            classSlot = classRepository.findById(request.getClassSlotId())
+                    .orElseThrow(() -> new NotFoundException("Class slot not found."));
+            Long classTeacherId = classSlot.getTimetable().getTeacherProfile().getId();
+            if (!classTeacherId.equals(teacherProfile.getId())) {
+                throw new BadRequestException("Class slot does not belong to the teacher's timetable.");
+            }
+        }
+
+        Lecture lecture = new Lecture();
+        lecture.setLectureTitle(request.getLectureTitle().trim());
+        lecture.setLectureAudioUrl(request.getLectureAudioUrl() != null ? request.getLectureAudioUrl() : "direct-upload");
+        lecture.setTeacherProfile(teacherProfile);
+        lecture.setClassSlot(classSlot);
+
+        // Populate analysis fields from the request (sent by frontend after whisper call)
+        if (request.getScore() != null) {
+            lecture.setScore(request.getScore());
+        }
+        if (request.getAnalysisContent() != null) {
+            lecture.setAnalysisContent(request.getAnalysisContent());
+        }
+        if (request.getScoreReasoning() != null) {
+            lecture.setScoreReasoning(request.getScoreReasoning());
+        }
+        if (request.getReviewRatio() != null) {
+            lecture.setReviewRatio(request.getReviewRatio());
+        }
+        if (request.getQuestionVelocity() != null) {
+            lecture.setQuestionVelocity(request.getQuestionVelocity());
+        }
+        if (request.getWaitTime() != null) {
+            lecture.setWaitTime(request.getWaitTime());
+        }
+        if (request.getTeacherTalkingTime() != null) {
+            lecture.setTeacherTalkingTime(request.getTeacherTalkingTime());
+        }
+        if (request.getHinglishFluency() != null) {
+            lecture.setHinglishFluency(request.getHinglishFluency());
+        }
+
+        return toResponse(lectureRepository.save(lecture));
     }
 
     @Transactional(readOnly = true)

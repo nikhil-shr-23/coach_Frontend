@@ -373,21 +373,61 @@ export default function TeacherDashboard() {
       alert("Teacher profile not found");
       return;
     }
+    if (!audioFile) {
+      alert("Please select an audio file");
+      return;
+    }
 
     setUploading(true);
     try {
       const token = localStorage.getItem("token");
-      const formData = new FormData();
-      formData.append("teacherProfileId", teacherProfileId.toString());
-      formData.append("lectureTitle", uploadForm.title);
-      if (uploadForm.classSlotId)
-        formData.append("classSlotId", uploadForm.classSlotId);
-      if (audioFile) formData.append("audio", audioFile);
+
+      // Step 1: Upload MP3 directly to Python whisper service for analysis
+      const whisperFormData = new FormData();
+      whisperFormData.append("audio", audioFile);
+
+      const whisperRes = await fetch(
+        "http://localhost:8000/audio-to-document",
+        {
+          method: "POST",
+          body: whisperFormData,
+        },
+      );
+
+      if (!whisperRes.ok) {
+        const errText = await whisperRes.text();
+        alert("Audio analysis failed: " + errText);
+        return;
+      }
+
+      const whisperData = await whisperRes.json();
+      const analysisData = whisperData.data || {};
+
+      // Step 2: Save lecture + analysis results to Spring backend as JSON
+      const lecturePayload = {
+        teacherProfileId,
+        lectureTitle: uploadForm.title,
+        classSlotId: uploadForm.classSlotId
+          ? Number(uploadForm.classSlotId)
+          : null,
+        lectureAudioUrl: "whisper-analyzed",
+        score: analysisData.pedagogical_score ?? null,
+        analysisContent: analysisData.analysis ?? null,
+        scoreReasoning: analysisData.score_reasoning ?? null,
+        reviewRatio: analysisData.review_ratio ?? null,
+        questionVelocity: analysisData.question_velocity ?? null,
+        waitTime: analysisData.wait_time ?? null,
+        teacherTalkingTime: analysisData.teacher_talking_time ?? null,
+        hinglishFluency: analysisData.hinglish_fluency ?? null,
+      };
 
       const res = await fetch(`${API_BASE}/api/lectures`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(lecturePayload),
       });
 
       if (res.ok) {
@@ -402,7 +442,8 @@ export default function TeacherDashboard() {
         });
         if (lecturesRes.ok) setLectures(await lecturesRes.json());
       } else {
-        alert("Upload failed. Please try again.");
+        const errBody = await res.text();
+        alert("Failed to save lecture: " + errBody);
       }
     } catch (e) {
       console.error(e);

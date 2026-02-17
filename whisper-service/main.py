@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from api.routes import router
 from middleware.observability import metrics_tracker
 
@@ -6,6 +7,14 @@ app = FastAPI(
     title="Multilingual Audio to Document API",
     description="Lecture analysis API supporting English, Hindi, and Hinglish with five core guarantees: Safe Inputs, Predictable Outputs, Failure Containment, Privacy by Design, and Operational Discipline",
     version="1.0.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(router)

@@ -84,7 +84,7 @@ public class TeacherProfileService {
         return response;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public TeacherProfileResponse getProfileForCurrentUser() {
         String username = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
         Users user = userRepository.findByUsername(username)
@@ -92,6 +92,13 @@ public class TeacherProfileService {
         
         TeacherProfile profile = teacherProfileRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new NotFoundException("Teacher profile not found for user: " + username));
+
+        // Lazily create timetable if it doesn't exist
+        if (timetableRepository.findByTeacherProfileId(profile.getId()).isEmpty()) {
+            Timetable timetable = new Timetable();
+            timetable.setTeacherProfile(profile);
+            timetableRepository.save(timetable);
+        }
         
         return toResponse(profile);
     }
