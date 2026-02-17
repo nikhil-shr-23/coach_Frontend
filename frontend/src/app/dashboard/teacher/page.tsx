@@ -200,7 +200,6 @@ function CircularProgress({
 interface MetricCardConfig {
   key: string;
   name: string;
-  principle: string;
   description: string;
   value: number;
   max: number;
@@ -552,35 +551,8 @@ export default function TeacherDashboard() {
           </div>
         </div>
 
-        {/* ───── PEDAGOGICAL COACH ───── */}
+        {/* ───── METRICS ───── */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-5">
-            <div className="w-9 h-9 rounded-lg border-2 border-dashed border-primary/20 flex items-center justify-center">
-              <svg
-                className="w-4.5 h-4.5 text-primary"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"
-                />
-              </svg>
-            </div>
-            <div>
-              <h3 className="font-display text-lg font-bold text-foreground">
-                Pedagogical Coach
-              </h3>
-              <p className="text-xs font-ui text-muted-foreground">
-                Rosenshine&apos;s Principles of Instruction — AI-detected
-                metrics
-              </p>
-            </div>
-          </div>
-
           {(() => {
             // Compute averages from lectures with metric data
             const metricsLectures = lectures.filter(
@@ -604,7 +576,7 @@ export default function TeacherDashboard() {
               {
                 key: "review",
                 name: "Review Ratio",
-                principle: "Principle 1: Daily Review",
+
                 description:
                   "Keywords/concepts from previous lecture detected in first 5-8 minutes",
                 value: reviewRatio,
@@ -629,7 +601,7 @@ export default function TeacherDashboard() {
               {
                 key: "questions",
                 name: "Question Velocity",
-                principle: "Principle 2: Ask Questions",
+
                 description:
                   "Number of questions asked by the teacher per 10 minutes",
                 value: questionVelocity,
@@ -654,7 +626,7 @@ export default function TeacherDashboard() {
               {
                 key: "wait",
                 name: "Wait Time",
-                principle: "Principle 3: Check Understanding",
+
                 description:
                   "Average silence after a question is asked (Target: >3 seconds)",
                 value: waitTime,
@@ -679,7 +651,7 @@ export default function TeacherDashboard() {
               {
                 key: "ttt",
                 name: "Teacher Talking Time",
-                principle: "Principle 6: Guide Practice",
+
                 description: "Ratio of teacher voice vs. student voice/silence",
                 value: ttt,
                 max: 100,
@@ -703,7 +675,7 @@ export default function TeacherDashboard() {
               {
                 key: "hinglish",
                 name: "Hinglish Fluency",
-                principle: "Contextual Necessity",
+
                 description:
                   "Accurate transcription of code-switching (Hindi/English mix)",
                 value: hinglish,
@@ -748,9 +720,6 @@ export default function TeacherDashboard() {
                         <div className="min-w-0 flex-1">
                           <p className="text-[11px] font-ui font-semibold text-foreground truncate">
                             {m.name}
-                          </p>
-                          <p className="text-[8px] font-ui text-muted-foreground/60 uppercase tracking-wider truncate">
-                            {m.principle}
                           </p>
                         </div>
                       </div>

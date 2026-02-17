@@ -19,17 +19,18 @@ spring:
       hibernate:
         format_sql: true
 
-  security:
-    oauth2:
-      client:
-        registration:
-          microsoft:
-            client-id: ${MICROSOFT_CLIENT_ID:placeholder-client-id}
-            client-secret: ${MICROSOFT_CLIENT_SECRET:placeholder-client-secret}
-            scope: openid, profile, email
-            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
-            authorization-grant-type: authorization_code
-            client-name: Microsoft
-        provider:
-          microsoft:
-            issuer-uri: https://login.microsoftonline.com/${MICROSOFT_TENANT_ID:common}/v2.0
+  # Microsoft OAuth2 disabled - set MICROSOFT_TENANT_ID, MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET to enable
+  # security:
+  #   oauth2:
+  #     client:
+  #       registration:
+  #         microsoft:
+  #           client-id: ${MICROSOFT_CLIENT_ID:placeholder-client-id}
+  #           client-secret: ${MICROSOFT_CLIENT_SECRET:placeholder-client-secret}
+  #           scope: openid, profile, email
+  #           redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+  #           authorization-grant-type: authorization_code
+  #           client-name: Microsoft
+  #       provider:
+  #         microsoft:
+  #           issuer-uri: https://login.microsoftonline.com/${MICROSOFT_TENANT_ID:common}/v2.0
