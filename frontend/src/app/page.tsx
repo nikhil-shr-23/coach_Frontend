@@ -35,35 +35,47 @@ export default function AdminLoginPage() {
       const token = await loginRes.text();
       localStorage.setItem("token", token);
 
-      if (email.includes("admin")) {
-        window.location.href = "/dashboard";
+      // Fetch role info to determine redirect
+      const roleRes = await fetch(
+        "http://localhost:8080/api/dashboard/dean/me",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      if (roleRes.ok) {
+        const info = await roleRes.json();
+
+        if (info.isSuperAdmin) {
+          // Super Admin → main dashboard (can also visit /dashboard/dean for school view)
+          window.location.href = "/dashboard";
+        } else if (info.role === "ADMIN") {
+          // Dean → locked dean dashboard
+          window.location.href = "/dashboard/dean";
+        } else {
+          // Teacher → fetch profile and go to teacher dashboard
+          const profileRes = await fetch(
+            "http://localhost:8080/api/teacher-profiles/me",
+            { headers: { Authorization: `Bearer ${token}` } },
+          );
+          if (profileRes.ok) {
+            const profile = await profileRes.json();
+            localStorage.setItem("teacherProfileId", profile.id);
+          }
+          window.location.href = "/dashboard/teacher";
+        }
       } else {
-        // Fetch profile to get school info for Dean or just to confirm Teacher
+        // Fallback: try teacher profile
         const profileRes = await fetch(
           "http://localhost:8080/api/teacher-profiles/me",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
+          { headers: { Authorization: `Bearer ${token}` } },
         );
-
         if (profileRes.ok) {
           const profile = await profileRes.json();
           localStorage.setItem("teacherProfileId", profile.id);
-
-          if (email.includes("dean")) {
-            // Redirect to Dean dashboard with school param
-            const schoolParam = encodeURIComponent(
-              profile.school || "School of Engineering & Technology",
-            );
-            window.location.href = `/dashboard/dean?school=${schoolParam}`;
-          } else {
-            // Teacher
-            window.location.href = "/dashboard/teacher";
-          }
+          window.location.href = "/dashboard/teacher";
         } else {
-          // Fallback if profile fetch fails but login worked (shouldn't happen for valid users)
-          console.error("Failed to fetch profile");
-          alert("Login successful but failed to load profile.");
+          window.location.href = "/dashboard";
         }
       }
     } catch (error) {

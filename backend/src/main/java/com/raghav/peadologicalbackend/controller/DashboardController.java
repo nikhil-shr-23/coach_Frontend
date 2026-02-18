@@ -164,7 +164,7 @@ public class DashboardController {
     }
 
     @GetMapping("/dean/me")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'TEACHER')")
     public ResponseEntity<Map<String, Object>> getDeanInfo() {
         String username = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
         com.raghav.peadologicalbackend.entity.Users user = userRepo.findByUsername(username)

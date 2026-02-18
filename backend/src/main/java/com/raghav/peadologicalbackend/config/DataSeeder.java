@@ -24,7 +24,7 @@ public class DataSeeder implements CommandLineRunner {
             superAdmin.setName("Super Admin");
             superAdmin.setEmail("superadmin@peadological.com"); 
             superAdmin.setUsername("superadmin");
-            superAdmin.setPassword(new BCryptPasswordEncoder(12).encode("superadmin123"));
+            superAdmin.setPassword(new BCryptPasswordEncoder(12).encode("SuperAdmin@2026"));
             superAdmin.setRoles(Roles.SUPER_ADMIN);
             superAdmin.setCreatedAt(LocalDateTime.now());
             
@@ -32,12 +32,12 @@ public class DataSeeder implements CommandLineRunner {
             System.out.println("Superadmin user created successfully.");
         }
 
-        if (userRepo.findByUsername("dean_soet") == null) {
+        if (userRepo.findByUsername("dean.soet") == null && userRepo.findByEmail("dean.soet@krmangalam.edu.in") == null) {
             Users dean = new Users();
             dean.setName("Dean SOET");
             dean.setEmail("dean.soet@krmangalam.edu.in");
-            dean.setUsername("dean_soet");
-            dean.setPassword(new BCryptPasswordEncoder(12).encode("dean123"));
+            dean.setUsername("dean.soet");
+            dean.setPassword(new BCryptPasswordEncoder(12).encode("Dean@SOET2026"));
             dean.setRoles(Roles.ADMIN);
             dean.setCreatedAt(LocalDateTime.now());
             dean = userRepo.save(dean);
@@ -45,13 +45,13 @@ public class DataSeeder implements CommandLineRunner {
             // Create Profile for Dean (linked to School)
             com.raghav.peadologicalbackend.entity.TeacherProfile deanProfile = new com.raghav.peadologicalbackend.entity.TeacherProfile();
             deanProfile.setUser(dean);
-            deanProfile.setSchool("School of Engineering & Technology");
-            deanProfile.setDepartment("Administrative");
+            deanProfile.setSchool("Engineering & Technology");
+            deanProfile.setDepartment("Dean Office");
             teacherProfileRepo.save(deanProfile);
             System.out.println("Dean user created.");
         }
 
-        if (userRepo.findByUsername("teacher_ananya") == null) {
+        if (userRepo.findByUsername("teacher_ananya") == null && userRepo.findByEmail("ananya.mehta@krmangalam.edu.in") == null) {
             Users teacher = new Users();
             teacher.setName("Dr. Ananya Mehta");
             teacher.setEmail("ananya.mehta@krmangalam.edu.in");
@@ -63,7 +63,7 @@ public class DataSeeder implements CommandLineRunner {
 
             com.raghav.peadologicalbackend.entity.TeacherProfile teacherProfile = new com.raghav.peadologicalbackend.entity.TeacherProfile();
             teacherProfile.setUser(teacher);
-            teacherProfile.setSchool("School of Engineering & Technology");
+            teacherProfile.setSchool("Engineering & Technology");
             teacherProfile.setDepartment("Computer Science & Engineering");
             teacherProfileRepo.save(teacherProfile);
              System.out.println("Teacher user created.");
