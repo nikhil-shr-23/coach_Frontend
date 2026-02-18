@@ -110,20 +110,22 @@ function DeanDashboardContent() {
         );
         if (res.ok) {
           const data = await res.json();
-          const mapped: Faculty[] = data.map((item: any) => ({
-            id: item.id,
-            name: item.name,
-            department: item.department || "General",
-            lecturesAnalyzed: item.lecturesAnalyzed || 0,
-            avgScore: Math.round((item.avgScore || 0) * 10) / 10,
-            lastActive: item.lastActive
-              ? new Date(item.lastActive).toLocaleDateString("en-IN", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                })
-              : null,
-          }));
+          const mapped: Faculty[] = data
+            .filter((item: any) => item.department !== "Dean Office")
+            .map((item: any) => ({
+              id: item.id,
+              name: item.name,
+              department: item.department || "General",
+              lecturesAnalyzed: item.lecturesAnalyzed || 0,
+              avgScore: Math.round((item.avgScore || 0) * 10) / 10,
+              lastActive: item.lastActive
+                ? new Date(item.lastActive).toLocaleDateString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })
+                : null,
+            }));
           setFacultyList(mapped);
         }
       } catch (error) {
@@ -157,28 +159,6 @@ function DeanDashboardContent() {
           facultyList.reduce((sum, f) => sum + f.avgScore, 0) / totalFaculty,
         )
       : 0;
-
-  // Department breakdown
-  const deptMap = new Map<
-    string,
-    { count: number; lectures: number; scoreSum: number }
-  >();
-  facultyList.forEach((f) => {
-    const dept = f.department || "General";
-    if (!deptMap.has(dept))
-      deptMap.set(dept, { count: 0, lectures: 0, scoreSum: 0 });
-    const entry = deptMap.get(dept)!;
-    entry.count++;
-    entry.lectures += f.lecturesAnalyzed;
-    entry.scoreSum += f.avgScore;
-  });
-
-  const departments = Array.from(deptMap.entries()).map(([name, stats]) => ({
-    name,
-    count: stats.count,
-    lectures: stats.lectures,
-    avgScore: stats.count > 0 ? Math.round(stats.scoreSum / stats.count) : 0,
-  }));
 
   if (isLoadingDean) {
     return (
@@ -313,25 +293,6 @@ function DeanDashboardContent() {
         {/* Selected School Content */}
         {selectedSchool ? (
           <>
-            {/* School Header */}
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl border-2 border-dashed border-primary/30 flex items-center justify-center bg-primary/5">
-                  <span className="font-display text-base font-bold text-primary">
-                    {schoolInfo?.code || "?"}
-                  </span>
-                </div>
-                <div>
-                  <h3 className="font-display text-xl font-bold text-foreground">
-                    {schoolInfo?.name || selectedSchool}
-                  </h3>
-                  <p className="text-xs font-ui text-muted-foreground">
-                    School of {schoolInfo?.name || selectedSchool}
-                  </p>
-                </div>
-              </div>
-            </div>
-
             {/* Stats Cards */}
             <div className="grid grid-cols-3 gap-4 mb-8">
               <div className="border-2 border-dashed border-border rounded-xl p-4 bg-card">
@@ -406,38 +367,6 @@ function DeanDashboardContent() {
                 </p>
               </div>
             </div>
-
-            {/* Department Breakdown */}
-            {departments.length > 0 && (
-              <div className="mb-8">
-                <h3 className="font-display text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-                  Department Breakdown
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  {departments.map((dept) => (
-                    <div
-                      key={dept.name}
-                      className="border border-dashed border-border/60 rounded-xl p-3 bg-card"
-                    >
-                      <div className="flex justify-between items-start mb-1">
-                        <h4 className="font-sans text-sm font-semibold text-foreground truncate mr-2">
-                          {dept.name}
-                        </h4>
-                        <span
-                          className={`text-sm font-bold whitespace-nowrap ${getScoreColor(dept.avgScore)}`}
-                        >
-                          {dept.avgScore}%
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-ui">
-                        <span>{dept.count} Faculty</span>
-                        <span>{dept.lectures} Lectures</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Faculty Table */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
